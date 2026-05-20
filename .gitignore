@@ -2,6 +2,9 @@
 .Rhistory
 .Rapp.history
 
+# macOS files
+.DS_Store
+
 # Session Data files
 .RData
 .RDataTmp
@@ -20,10 +23,16 @@
 
 # RStudio files
 .Rproj.user/
+*.Rproj
 
 # produced vignettes
 vignettes/*.html
 vignettes/*.pdf
+
+# rendered reports and supporting files
+*.html
+*_files/
+figures/
 
 # OAuth2 token, see https://github.com/hadley/httr/releases/tag/v0.3
 .httr-oauth
@@ -31,10 +40,14 @@ vignettes/*.pdf
 # knitr and R markdown default cache directories
 *_cache/
 /cache/
+.cache/
 
 # Temporary files created by R markdown
 *.utf8.md
 *.knit.md
+
+# runtime logs
+*.log
 
 # R Environment Variables
 .Renviron

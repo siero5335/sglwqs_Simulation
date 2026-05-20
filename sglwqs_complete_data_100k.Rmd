@@ -22,6 +22,8 @@ knitr::opts_chunk$set(
 # Publication figure output directory
 fig_dir <- "figures"
 dir.create(fig_dir, showWarnings = FALSE, recursive = TRUE)
+
+N_WORKERS <- max(parallel::detectCores() - 1L, 1L)
 ```
 
 ## Overview
@@ -130,7 +132,7 @@ groups <- list(
 )
 
 tic()
-plan(multisession, workers = 10)
+plan(multisession, workers = N_WORKERS)
 
 
 fit <- sglwqs(
