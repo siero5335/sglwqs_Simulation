@@ -1,0 +1,1363 @@
+---
+title: "High-Dimensional Group and Truth-Structure Sensitivity (Checkpointed)"
+subtitle: "qgcomp vs gWQS vs groupWQS vs SGL-WQS under modest group/truth perturbations"
+author: "Revision Simulation Analysis"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    number_sections: true
+    theme: flatly
+    highlight: tango
+    code_folding: show
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 12,
+  fig.height = 8,
+  dpi = 150,
+  cache = TRUE
+)
+
+parse_int_env <- function(name, default) {
+  value <- Sys.getenv(name, unset = "")
+  if (!nzchar(value)) return(default)
+  parsed <- suppressWarnings(as.integer(value))
+  if (is.na(parsed)) default else parsed
+}
+
+parse_numeric_vector_env <- function(name, default) {
+  value <- Sys.getenv(name, unset = "")
+  if (!nzchar(value)) return(default)
+  parsed <- suppressWarnings(as.numeric(strsplit(value, ",", fixed = TRUE)[[1]]))
+  parsed <- parsed[!is.na(parsed)]
+  if (length(parsed) == 0L) default else parsed
+}
+
+parse_logical_env <- function(name, default = FALSE) {
+  value <- tolower(Sys.getenv(name, unset = ""))
+  if (!nzchar(value)) return(default)
+  value %in% c("1", "true", "t", "yes", "y")
+}
+
+N_BOOT <- parse_int_env("GT_N_BOOT", 100L)
+N_QUANTILES <- parse_int_env("GT_N_QUANTILES", 4L)
+
+SEEDS_FULL <- c(71, 42, 123, 256, 314, 500, 617, 789, 888, 999,
+                1001, 1123, 1234, 1357, 1500, 1618, 1729, 1847, 1963, 2048,
+                2222, 2345, 2500, 2718, 2801, 3001, 3141, 3333, 3500, 3777)
+N_SEEDS_REQUESTED <- parse_int_env("GT_N_SEEDS", 10L)
+SEEDS <- SEEDS_FULL[seq_len(min(N_SEEDS_REQUESTED, length(SEEDS_FULL)))]
+N_SEEDS <- length(SEEDS)
+
+DETECTED_CORES <- parallel::detectCores()
+N_WORKERS <- max(1L, parse_int_env("GT_N_WORKERS", 6L))
+FORCE_RERUN <- parse_logical_env("GT_FORCE_RERUN", FALSE)
+
+SENS_SCENARIOS <- data.frame(
+  Scenario = c(
+    "p100_g05_baseline3_main10",
+    "p100_g10_baseline3_main10",
+    "p100_g20_baseline3_main10",
+    "p100_g10_weak3_main10",
+    "p100_g10_strong3_main10",
+    "p100_g05_weak3_orth5",
+    "p100_g05_strong3_orth5",
+    "p100_g20_weak3_orth5",
+    "p100_g20_strong3_orth5"
+  ),
+  n = rep(1000L, 9L),
+  p = rep(100L, 9L),
+  n_groups = c(5L, 10L, 20L, 10L, 10L, 5L, 5L, 20L, 20L),
+  truth_profile = c("baseline3", "baseline3", "baseline3",
+                    "weak3", "strong3",
+                    "weak3", "strong3", "weak3", "strong3"),
+  seed_count = c(10L, 10L, 10L, 10L, 10L, 5L, 5L, 5L, 5L),
+  stringsAsFactors = FALSE
+)
+
+if (parse_logical_env("GT_SMOKE_SMALL", FALSE)) {
+  SENS_SCENARIOS <- data.frame(
+    Scenario = "smoke_p050_g05_sparse3",
+    n = 120L,
+    p = 50L,
+    n_groups = 5L,
+    truth_profile = "sparse3",
+    seed_count = 1L,
+    stringsAsFactors = FALSE
+  )
+}
+
+scenario_filter <- Sys.getenv("GT_SCENARIO_NAMES", unset = "")
+if (nzchar(scenario_filter)) {
+  keep_scenarios <- trimws(strsplit(scenario_filter, ",", fixed = TRUE)[[1]])
+  SENS_SCENARIOS <- SENS_SCENARIOS[SENS_SCENARIOS$Scenario %in% keep_scenarios, , drop = FALSE]
+  if (nrow(SENS_SCENARIOS) == 0L) {
+    stop("GT_SCENARIO_NAMES did not match any configured sensitivity scenario.")
+  }
+}
+
+scenario_levels <- SENS_SCENARIOS$Scenario
+P_VALUES <- sort(unique(SENS_SCENARIOS$p))
+
+fig_dir <- file.path("figures", "highdim_group_truth_checkpointed")
+cache_dir <- file.path("analysis_cache", "highdim_group_truth_checkpointed")
+dir.create(fig_dir, showWarnings = FALSE, recursive = TRUE)
+dir.create(cache_dir, showWarnings = FALSE, recursive = TRUE)
+
+cat(sprintf("scenarios = %d; max seeds = %d; planned scenario-seeds = %d; bootstraps = %d\n",
+            nrow(SENS_SCENARIOS), N_SEEDS, sum(pmin(SENS_SCENARIOS$seed_count, N_SEEDS)), N_BOOT))
+cat(sprintf("Parallel workers requested: %d; detected cores: %s\n",
+            N_WORKERS,
+            ifelse(is.na(DETECTED_CORES), "unknown", as.character(DETECTED_CORES))))
+```
+
+# Overview
+
+This simulation supplements the main high-dimensional exposure-count analysis by perturbing the number of exposure groups and signal strength at p = 100. The main group-count and signal-strength scenarios use 10 seeds, while selected orthogonal group-count/signal-strength corners use 5 seeds. The grid is checkpointed so that completed scenario/seed results can be recovered incrementally.
+
+**Methods compared:** qgcomp, gWQS, groupWQS, and SGL-WQS.
+
+**Design choices:**
+
+- Variables are anonymized as `X001`, `X002`, ... because this simulation targets dimensionality rather than a specific chemical panel.
+- The baseline setting uses 10 groups and three active groups.
+- Additional scenarios vary group count, active-component sparsity/density, and include a small p > n stress setting.
+- The remaining groups are null and are used to assess weight leakage and false positive behavior.
+- The outer simulation grid is parallelized over `r N_WORKERS` workers. Method-level bootstrap parallelism is disabled to avoid nested oversubscription.
+- The checkpointed runner saves each scenario/seed result immediately, then writes scenario-specific and full combined result files.
+
+Environment overrides for smoke tests or reruns:
+
+```r
+Sys.setenv(
+  GT_N_SEEDS = "1",
+  GT_N_BOOT = "5",
+  GT_N_WORKERS = "1",
+  GT_FORCE_RERUN = "true"
+)
+```
+
+# Setup
+
+```{r load-packages, cache=FALSE}
+library(MASS)
+library(qgcomp)
+library(gWQS)
+library(groupWQS)
+library(sglwqs)
+library(future)
+library(future.apply)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(knitr)
+library(kableExtra)
+library(tictoc)
+```
+
+# Simulation Specification
+
+```{r simulation-specification}
+make_group_definitions <- function(p, n_groups = 10L) {
+  stopifnot(p >= n_groups)
+  vars <- sprintf("X%03d", seq_len(p))
+  group_ids <- cut(seq_len(p),
+                   breaks = n_groups,
+                   labels = sprintf("G%02d", seq_len(n_groups)),
+                   include.lowest = TRUE)
+  split(vars, group_ids)
+}
+
+make_truth <- function(p, n_groups = 10L, truth_profile = "baseline3") {
+  groups <- make_group_definitions(p, n_groups)
+  vars <- unlist(groups, use.names = FALSE)
+  beta <- setNames(rep(0, length(vars)), vars)
+
+  add_group_effect <- function(group_index, direction, n_active, magnitude = c(0.08, 0.14)) {
+    if (group_index > length(groups) || n_active <= 0L) return(invisible(NULL))
+    group_vars <- groups[[group_index]]
+    n_use <- min(length(group_vars), n_active)
+    if (n_use <= 0L) return(invisible(NULL))
+    effect <- signal_scale * seq(magnitude[1], magnitude[2], length.out = n_use)
+    if (identical(direction, "negative")) effect <- -rev(effect)
+    beta[group_vars[seq_len(n_use)]] <<- effect
+    invisible(NULL)
+  }
+
+  add_mixed_group <- function(group_index, n_neg, n_pos) {
+    if (group_index > length(groups)) return(invisible(NULL))
+    group_vars <- groups[[group_index]]
+    n_neg <- min(length(group_vars), n_neg)
+    remaining <- max(length(group_vars) - n_neg, 0L)
+    n_pos <- min(remaining, n_pos)
+    if (n_neg > 0L) {
+      beta[group_vars[seq_len(n_neg)]] <<- signal_scale * seq(-0.16, -0.11, length.out = n_neg)
+    }
+    if (n_pos > 0L) {
+      pos_idx <- seq.int(n_neg + 1L, n_neg + n_pos)
+      beta[group_vars[pos_idx]] <<- signal_scale * seq(0.10, 0.14, length.out = n_pos)
+    }
+    invisible(NULL)
+  }
+
+  profile <- match.arg(truth_profile, c("weak3", "baseline3", "strong3",
+                                        "sparse3", "dense3", "many5"))
+  signal_scale <- switch(
+    profile,
+    weak3 = 0.60,
+    strong3 = 1.60,
+    1.00
+  )
+
+  if (profile %in% c("weak3", "baseline3", "strong3")) {
+    g1 <- groups[[1]]
+    g2 <- groups[[2]]
+    g3 <- groups[[3]]
+    add_group_effect(1, "positive", max(3L, ceiling(length(g1) * 0.15)), c(0.08, 0.12))
+    add_mixed_group(2,
+                    max(2L, floor(length(g2) * 0.08)),
+                    max(2L, floor(length(g2) * 0.06)))
+    add_group_effect(3, "negative", max(2L, ceiling(length(g3) * 0.08)), c(0.10, 0.14))
+  } else if (profile == "sparse3") {
+    add_group_effect(1, "positive", 2L, c(0.10, 0.13))
+    add_mixed_group(2, 1L, 1L)
+    add_group_effect(3, "negative", 2L, c(0.10, 0.13))
+  } else if (profile == "dense3") {
+    g1 <- groups[[1]]
+    g2 <- groups[[2]]
+    g3 <- groups[[3]]
+    add_group_effect(1, "positive", max(4L, ceiling(length(g1) * 0.30)), c(0.06, 0.11))
+    add_mixed_group(2,
+                    max(3L, ceiling(length(g2) * 0.15)),
+                    max(3L, ceiling(length(g2) * 0.15)))
+    add_group_effect(3, "negative", max(4L, ceiling(length(g3) * 0.20)), c(0.07, 0.12))
+  } else if (profile == "many5") {
+    active_groups <- seq_len(min(5L, length(groups)))
+    for (idx in active_groups) {
+      direction <- if (idx %% 2L == 0L) "negative" else "positive"
+      add_group_effect(idx, direction, 2L, c(0.09, 0.13))
+    }
+  }
+
+  truth <- data.frame(
+    Variable = vars,
+    True_Beta = as.numeric(beta),
+    Group = rep(names(groups), lengths(groups)),
+    stringsAsFactors = FALSE
+  ) %>%
+    mutate(
+      True_Direction = case_when(
+        True_Beta > 0.01 ~ "Positive",
+        True_Beta < -0.01 ~ "Negative",
+        TRUE ~ "None"
+      ),
+      IsActive = True_Direction != "None",
+      IsActiveGroup = as.logical(ave(IsActive, Group, FUN = any))
+    )
+
+  list(
+    groups = groups,
+    all_exposures = vars,
+    beta = beta,
+    truth = truth,
+    truth_profile = profile
+  )
+}
+
+scenario_table <- purrr::pmap_dfr(SENS_SCENARIOS, function(Scenario, n, p, n_groups, truth_profile, seed_count) {
+  spec <- make_truth(p = p, n_groups = n_groups, truth_profile = truth_profile)
+  data.frame(
+    Scenario = Scenario,
+    n = n,
+    p = p,
+    truth_profile = truth_profile,
+    planned_seeds = min(seed_count, N_SEEDS),
+    n_groups = length(spec$groups),
+    min_group_size = min(lengths(spec$groups)),
+    max_group_size = max(lengths(spec$groups)),
+    active_components = sum(spec$truth$IsActive),
+    active_groups = sum(tapply(spec$truth$IsActive, spec$truth$Group, any))
+  )
+})
+
+kable(scenario_table, caption = "High-dimensional simulation scenarios") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+```{r true-effect-summary}
+truth_preview <- purrr::pmap_dfr(SENS_SCENARIOS, function(Scenario, n, p, n_groups, truth_profile, seed_count) {
+  spec <- make_truth(p = p, n_groups = n_groups, truth_profile = truth_profile)
+  spec$truth %>%
+    filter(IsActive) %>%
+    count(Scenario = Scenario, p = p, n_groups = n_groups, truth_profile = truth_profile,
+          Group, True_Direction, name = "Active_Components")
+})
+
+kable(truth_preview, caption = "Active components by p, group, and direction") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+```{r true-effect-plot, fig.height=7, fig.width=12}
+truth_for_plot <- purrr::pmap_dfr(SENS_SCENARIOS, function(Scenario, n, p, n_groups, truth_profile, seed_count) {
+  make_truth(p = p, n_groups = n_groups, truth_profile = truth_profile)$truth %>%
+    filter(IsActive) %>%
+    mutate(Scenario = factor(Scenario, levels = scenario_levels))
+})
+
+ggplot(truth_for_plot, aes(x = Variable, y = True_Beta, fill = Group)) +
+  geom_col(width = 0.75) +
+  geom_hline(yintercept = 0, color = "gray30") +
+  facet_wrap(~ Scenario, scales = "free_x", ncol = 2) +
+  labs(
+    title = "True Nonzero Component Effects",
+    subtitle = "Only active components are shown; variables are anonymized.",
+    x = NULL,
+    y = "True beta"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    legend.position = "bottom"
+  )
+```
+
+# Data Generation
+
+```{r data-generation-function}
+generate_highdim_p_data <- function(p,
+                                    n = 1000L,
+                                    seed = 71,
+                                    n_groups = 10L,
+                                    truth_profile = "baseline3",
+                                    within_rho = 0.45,
+                                    cross_rho = 0.05,
+                                    noise_sd = 4.0) {
+  set.seed(seed)
+  spec <- make_truth(p, n_groups, truth_profile)
+  groups <- spec$groups
+  vars <- spec$all_exposures
+  beta <- spec$beta
+
+  sex <- rbinom(n, 1, 0.5)
+  age <- pmax(pmin(round(rnorm(n, 50, 12)), 80), 20)
+  bmi <- pmax(pmin(round(22 + 0.05 * age + 1.5 * sex + rnorm(n, 0, 4), 1), 45), 15)
+
+  global_factor <- rnorm(n)
+  group_factors <- matrix(rnorm(n * length(groups)), nrow = n, ncol = length(groups))
+  colnames(group_factors) <- names(groups)
+
+  Xz <- matrix(NA_real_, nrow = n, ncol = length(vars), dimnames = list(NULL, vars))
+  for (g in seq_along(groups)) {
+    group_vars <- groups[[g]]
+    idx <- match(group_vars, vars)
+    eps <- matrix(rnorm(n * length(group_vars)), nrow = n, ncol = length(group_vars))
+    latent <- sqrt(cross_rho) * global_factor +
+      sqrt(within_rho) * group_factors[, g] +
+      sqrt(1 - within_rho - cross_rho) * eps
+    Xz[, idx] <- latent
+  }
+
+  group_shift <- rep(seq(-0.3, 0.3, length.out = length(groups)), lengths(groups))
+  X <- exp(0.45 * sweep(Xz, 2, group_shift, "+"))
+  colnames(X) <- vars
+
+  X_scaled <- scale(X)
+  eta <- 50 +
+    as.numeric(X_scaled %*% beta) +
+    sex * 2.0 +
+    (age - 50) / 10 * 1.5 +
+    (bmi - 25) / 5 * 3.0
+
+  Y <- eta + rnorm(n, mean = 0, sd = noise_sd)
+
+  out <- data.frame(X, sex = sex, age = age, bmi = bmi, Y = Y, check.names = FALSE)
+  attr(out, "truth") <- spec$truth
+  attr(out, "groups") <- groups
+  attr(out, "beta") <- beta
+  attr(out, "truth_profile") <- truth_profile
+  out
+}
+```
+
+```{r verify-data, cache=FALSE}
+verification <- purrr::pmap_dfr(SENS_SCENARIOS, function(Scenario, n, p, n_groups, truth_profile, seed_count) {
+  dat <- generate_highdim_p_data(
+    p = p,
+    n = n,
+    seed = 42,
+    n_groups = n_groups,
+    truth_profile = truth_profile
+  )
+  truth <- attr(dat, "truth")
+  active_vars <- truth$Variable[truth$IsActive]
+  null_vars <- truth$Variable[!truth$IsActive]
+  active_cor <- if (length(active_vars) > 1L) {
+    mean(abs(cor(dat[, active_vars, drop = FALSE]))[upper.tri(cor(dat[, active_vars, drop = FALSE]))])
+  } else {
+    NA_real_
+  }
+  data.frame(
+    Scenario = Scenario,
+    p = p,
+    n_groups = n_groups,
+    truth_profile = truth_profile,
+    n = nrow(dat),
+    outcome_mean = mean(dat$Y),
+    outcome_sd = sd(dat$Y),
+    active_mean_abs_cor = active_cor,
+    null_sample_size = length(null_vars)
+  )
+})
+
+kable(verification, digits = 3, caption = "Generated data checks") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+# Method Wrappers
+
+```{r helper-functions}
+time_it <- function(expr) {
+  start <- proc.time()[["elapsed"]]
+  out <- tryCatch(
+    list(ok = TRUE, value = force(expr), error = NA_character_),
+    error = function(e) list(ok = FALSE, value = NULL, error = conditionMessage(e))
+  )
+  out$elapsed <- proc.time()[["elapsed"]] - start
+  out
+}
+
+calc_active_direction_accuracy <- function(weights_df, truth) {
+  if (is.null(weights_df) || nrow(weights_df) == 0L) return(NA_real_)
+
+  wide <- weights_df %>%
+    filter(Direction %in% c("Positive", "Negative")) %>%
+    group_by(Variable, Direction) %>%
+    summarize(Weight = sum(Weight, na.rm = TRUE), .groups = "drop") %>%
+    tidyr::pivot_wider(names_from = Direction, values_from = Weight, values_fill = 0)
+
+  scored <- truth %>%
+    filter(IsActive) %>%
+    left_join(wide, by = "Variable") %>%
+    mutate(
+      Positive = replace_na(Positive, 0),
+      Negative = replace_na(Negative, 0),
+      Detected = if_else(Positive >= Negative, "Positive", "Negative")
+    )
+
+  mean(scored$Detected == scored$True_Direction)
+}
+
+calc_groupwqs_active_direction_accuracy <- function(group_coefs, groups, truth) {
+  if (is.null(group_coefs) || length(group_coefs) == 0L) return(NA_real_)
+  n_coef <- min(length(group_coefs), length(groups))
+  group_dir <- setNames(ifelse(group_coefs[seq_len(n_coef)] >= 0, "Positive", "Negative"),
+                        names(groups)[seq_len(n_coef)])
+  scored <- truth %>%
+    filter(IsActive, Group %in% names(group_dir)) %>%
+    mutate(Detected = unname(group_dir[Group]))
+  mean(scored$Detected == scored$True_Direction)
+}
+
+extract_sglwqs_weights <- function(fit, p, seed) {
+  extract_weights(fit, direction = "both") %>%
+    dplyr::select(Variable = variable, Weight = weight, Direction = direction) %>%
+    mutate(
+      Direction = tools::toTitleCase(Direction),
+      Method = "SGL-WQS",
+      p = p,
+      Seed = seed
+    )
+}
+
+extract_sglwqs_selection <- function(fit, p, seed, truth) {
+  if (is.null(fit$boot_info) ||
+      is.null(fit$boot_info$selection_freq_pos) ||
+      is.null(fit$boot_info$selection_freq_neg)) {
+    return(NULL)
+  }
+
+  bind_rows(
+    data.frame(
+      Variable = names(fit$boot_info$selection_freq_pos),
+      Direction = "Positive",
+      SelFreq = as.numeric(fit$boot_info$selection_freq_pos),
+      stringsAsFactors = FALSE
+    ),
+    data.frame(
+      Variable = names(fit$boot_info$selection_freq_neg),
+      Direction = "Negative",
+      SelFreq = as.numeric(fit$boot_info$selection_freq_neg),
+      stringsAsFactors = FALSE
+    )
+  ) %>%
+    left_join(truth, by = "Variable") %>%
+    mutate(Method = "SGL-WQS", p = p, Seed = seed)
+}
+
+build_weight_share_table <- function(weights_df, truth) {
+  if (is.null(weights_df) || nrow(weights_df) == 0L) return(NULL)
+
+  weights_df %>%
+    group_by(Method, p, Seed, Variable) %>%
+    summarize(MaxWeight = max(Weight, na.rm = TRUE), .groups = "drop") %>%
+    left_join(truth, by = "Variable") %>%
+    group_by(Method, p, Seed) %>%
+    mutate(
+      TotalWeight = sum(MaxWeight, na.rm = TRUE),
+      NormWeight = if_else(TotalWeight > 0, MaxWeight / TotalWeight, NA_real_)
+    ) %>%
+    ungroup()
+}
+```
+
+```{r analysis-function}
+run_one_scenario <- function(p,
+                             seed,
+                             n = 1000L,
+                             n_groups = 10L,
+                             truth_profile = "baseline3",
+                             scenario = sprintf("p%d_g%d_%s", p, n_groups, truth_profile)) {
+  dat <- generate_highdim_p_data(
+    p = p,
+    n = n,
+    seed = seed,
+    n_groups = n_groups,
+    truth_profile = truth_profile
+  )
+  truth <- attr(dat, "truth")
+  groups <- attr(dat, "groups")
+  all_exposures <- unlist(groups, use.names = FALSE)
+  covars <- c("sex", "age", "bmi")
+
+  result <- list(
+    Scenario = scenario,
+    p = p,
+    n = n,
+    n_groups = n_groups,
+    truth_profile = truth_profile,
+    seed = seed,
+    weights = list(),
+    effects = list(),
+    accuracy = list(),
+    timing = list(),
+    errors = list(),
+    selection = list()
+  )
+
+  # qgcomp
+  qgcomp_res <- time_it({
+    qgcomp_formula <- as.formula(
+      paste("Y ~", paste(all_exposures, collapse = " + "), "+ sex + age + bmi")
+    )
+    fit <- qgcomp.glm.noboot(qgcomp_formula,
+                             expnms = all_exposures,
+                             data = dat,
+                             family = gaussian(),
+                             q = N_QUANTILES)
+    weights <- data.frame(
+      Variable = c(names(fit$pos.weights), names(fit$neg.weights)),
+      Weight = c(fit$pos.weights, fit$neg.weights),
+      Direction = c(rep("Positive", length(fit$pos.weights)),
+                    rep("Negative", length(fit$neg.weights))),
+      Method = "qgcomp",
+      p = p,
+      Seed = seed,
+      stringsAsFactors = FALSE
+    )
+    list(
+      weights = weights,
+      effects = data.frame(
+        Method = "qgcomp",
+        p = p,
+        Seed = seed,
+        Effect_Type = c("Overall", "Positive", "Negative"),
+        Estimate = c(fit$psi, fit$pos.psi, fit$neg.psi)
+      ),
+      active_direction_accuracy = calc_active_direction_accuracy(weights, truth)
+    )
+  })
+  result$timing$qgcomp <- qgcomp_res$elapsed
+  if (qgcomp_res$ok) {
+    result$weights$qgcomp <- qgcomp_res$value$weights
+    result$effects$qgcomp <- qgcomp_res$value$effects
+    result$accuracy$qgcomp <- qgcomp_res$value$active_direction_accuracy
+  } else {
+    result$errors$qgcomp <- qgcomp_res$error
+  }
+
+  # gWQS, two-index
+  gwqs_res <- time_it({
+    gwqs_formula <- as.formula("Y ~ pwqs + nwqs + sex + age + bmi")
+    fit <- withCallingHandlers(
+      gwqs(gwqs_formula,
+           mix_name = all_exposures,
+           data = dat,
+           q = N_QUANTILES,
+           validation = 0.4,
+           b = N_BOOT,
+           b1_pos = TRUE,
+           rh = 1,
+           family = "gaussian",
+           seed = seed,
+           plan_strategy = "sequential"),
+      warning = function(w) {
+        if (grepl("Using formula\\(x\\) is deprecated|formula\\.character",
+                  conditionMessage(w))) {
+          invokeRestart("muffleWarning")
+        }
+      }
+    )
+    fw <- fit$final_weights
+    weights <- bind_rows(
+      data.frame(
+        Variable = fw$mix_name,
+        Weight = fw$mean_weight_p,
+        Direction = "Positive",
+        Method = "gWQS",
+        p = p,
+        Seed = seed,
+        stringsAsFactors = FALSE
+      ),
+      data.frame(
+        Variable = fw$mix_name,
+        Weight = fw$mean_weight_n,
+        Direction = "Negative",
+        Method = "gWQS",
+        p = p,
+        Seed = seed,
+        stringsAsFactors = FALSE
+      )
+    )
+    coef_vec <- coef(fit$fit)
+    list(
+      weights = weights,
+      effects = data.frame(
+        Method = "gWQS",
+        p = p,
+        Seed = seed,
+        Effect_Type = c("Positive", "Negative"),
+        Estimate = c(unname(coef_vec["pwqs"]), unname(coef_vec["nwqs"]))
+      ),
+      active_direction_accuracy = calc_active_direction_accuracy(weights, truth)
+    )
+  })
+  result$timing$gWQS <- gwqs_res$elapsed
+  if (gwqs_res$ok) {
+    result$weights$gWQS <- gwqs_res$value$weights
+    result$effects$gWQS <- gwqs_res$value$effects
+    result$accuracy$gWQS <- gwqs_res$value$active_direction_accuracy
+  } else {
+    result$errors$gWQS <- gwqs_res$error
+  }
+
+  # groupWQS
+  groupwqs_res <- time_it({
+    group_list <- unname(groups)
+    X_gw <- make.X(dat, num.groups = length(group_list), groups = group_list)
+    x_s <- make.x.s(dat, num.groups = length(group_list), groups = group_list)
+
+    n_train <- round(nrow(dat) * 0.6)
+    set.seed(seed)
+    train_idx <- sample(seq_len(nrow(dat)), size = n_train)
+    valid_idx <- setdiff(seq_len(nrow(dat)), train_idx)
+
+    fit <- gwqs.fit(
+      y = dat$Y[valid_idx],
+      y.train = dat$Y[train_idx],
+      x = X_gw[valid_idx, ],
+      x.train = X_gw[train_idx, ],
+      z = dat[valid_idx, covars, drop = FALSE],
+      z.train = dat[train_idx, covars, drop = FALSE],
+      x.s = x_s,
+      B = N_BOOT,
+      n.quantiles = N_QUANTILES,
+      func = "continuous"
+    )
+
+    weights <- purrr::imap_dfr(fit$weights, function(w, i) {
+      data.frame(
+        Variable = names(w),
+        Weight = as.numeric(w),
+        Direction = "Combined",
+        Method = "groupWQS",
+        p = p,
+        Seed = seed,
+        stringsAsFactors = FALSE
+      )
+    })
+    group_coefs <- coef(fit$fit)[grep("^GWQS", names(coef(fit$fit)))]
+
+    list(
+      weights = weights,
+      effects = data.frame(
+        Method = "groupWQS",
+        p = p,
+        Seed = seed,
+        Effect_Type = names(group_coefs),
+        Estimate = as.numeric(group_coefs)
+      ),
+      group_coefs = group_coefs,
+      active_direction_accuracy = calc_groupwqs_active_direction_accuracy(group_coefs, groups, truth)
+    )
+  })
+  result$timing$groupWQS <- groupwqs_res$elapsed
+  if (groupwqs_res$ok) {
+    result$weights$groupWQS <- groupwqs_res$value$weights
+    result$effects$groupWQS <- groupwqs_res$value$effects
+    result$accuracy$groupWQS <- groupwqs_res$value$active_direction_accuracy
+  } else {
+    result$errors$groupWQS <- groupwqs_res$error
+  }
+
+  # SGL-WQS
+  sglwqs_res <- time_it({
+    fit <- sglwqs(
+      X = dat[, all_exposures, drop = FALSE],
+      y = dat$Y,
+      covariates = dat[, covars, drop = FALSE],
+      groups = groups,
+      family = "gaussian",
+      n_quantiles = N_QUANTILES,
+      bootstrap = TRUE,
+      n_boot = N_BOOT,
+      parallel = FALSE,
+      validation = TRUE,
+      train_prop = 0.6,
+      seed = seed,
+      verbose = FALSE
+    )
+    weights <- extract_sglwqs_weights(fit, p, seed)
+    list(
+      weights = weights,
+      effects = data.frame(
+        Method = "SGL-WQS",
+        p = p,
+        Seed = seed,
+        Effect_Type = c("Positive", "Negative"),
+        Estimate = c(fit$pos_index_sum, -fit$neg_index_sum)
+      ),
+      active_direction_accuracy = calc_active_direction_accuracy(weights, truth),
+      selection = extract_sglwqs_selection(fit, p, seed, truth)
+    )
+  })
+  result$timing$`SGL-WQS` <- sglwqs_res$elapsed
+  if (sglwqs_res$ok) {
+    result$weights$`SGL-WQS` <- sglwqs_res$value$weights
+    result$effects$`SGL-WQS` <- sglwqs_res$value$effects
+    result$accuracy$`SGL-WQS` <- sglwqs_res$value$active_direction_accuracy
+    result$selection$`SGL-WQS` <- sglwqs_res$value$selection
+  } else {
+    result$errors$`SGL-WQS` <- sglwqs_res$error
+  }
+
+  result
+}
+```
+
+# Run Analysis
+
+```{r run-analysis, cache=FALSE}
+results_file <- file.path(
+  cache_dir,
+  sprintf("highdim_group_truth_checkpointed_boot%d_seeds%d.rds", N_BOOT, N_SEEDS)
+)
+
+scenario_dir <- file.path(
+  cache_dir,
+  sprintf("scenarios_boot%d_seeds%d", N_BOOT, N_SEEDS)
+)
+scenario_result_dir <- file.path(
+  cache_dir,
+  sprintf("by_scenario_boot%d_seeds%d", N_BOOT, N_SEEDS)
+)
+dir.create(scenario_dir, showWarnings = FALSE, recursive = TRUE)
+dir.create(scenario_result_dir, showWarnings = FALSE, recursive = TRUE)
+
+scenario_grid <- purrr::pmap_dfr(
+  SENS_SCENARIOS,
+  function(Scenario, n, p, n_groups, truth_profile, seed_count) {
+    scenario_seeds <- SEEDS[seq_len(min(as.integer(seed_count), length(SEEDS)))]
+    data.frame(
+      Scenario = Scenario,
+      n = n,
+      p = p,
+      n_groups = n_groups,
+      truth_profile = truth_profile,
+      seed_count = as.integer(seed_count),
+      Seed = scenario_seeds,
+      stringsAsFactors = FALSE
+    )
+  }
+) %>%
+  mutate(Scenario = factor(Scenario, levels = scenario_levels)) %>%
+  arrange(Scenario, Seed) %>%
+  mutate(Scenario = as.character(Scenario))
+
+scenario_file <- function(scenario, seed) {
+  safe_scenario <- gsub("[^A-Za-z0-9_]+", "_", scenario)
+  file.path(scenario_dir, sprintf("%s_seed%d.rds", safe_scenario, as.integer(seed)))
+}
+
+status_file <- file.path(
+  cache_dir,
+  sprintf("highdim_group_truth_checkpointed_status_boot%d_seeds%d.csv", N_BOOT, N_SEEDS)
+)
+
+write_checkpoint_status <- function() {
+  files <- purrr::map2_chr(scenario_grid$Scenario, scenario_grid$Seed, scenario_file)
+  info <- file.info(files)
+  status <- scenario_grid %>%
+    mutate(
+      Scenario_File = files,
+      Completed = file.exists(files),
+      Size_Bytes = ifelse(Completed, info$size, NA_real_),
+      Modified = ifelse(Completed, format(info$mtime, "%Y-%m-%d %H:%M:%S %Z"), NA_character_)
+    )
+  write.csv(status, status_file, row.names = FALSE)
+  invisible(status)
+}
+
+run_or_load_checkpointed_scenario <- function(row_i, index_i, total_i) {
+  out_file <- scenario_file(row_i$Scenario, row_i$Seed)
+  if (file.exists(out_file) && !FORCE_RERUN) {
+    cat(sprintf("[load] %s, seed=%d (%d/%d)\n",
+                row_i$Scenario, row_i$Seed, index_i, total_i))
+    return(readRDS(out_file))
+  }
+
+  cat(sprintf("[run] %s, seed=%d (%d/%d)\n",
+              row_i$Scenario, row_i$Seed, index_i, total_i))
+  result <- tryCatch(
+    run_one_scenario(
+      p = row_i$p,
+      seed = row_i$Seed,
+      n = row_i$n,
+      n_groups = row_i$n_groups,
+      truth_profile = row_i$truth_profile,
+      scenario = row_i$Scenario
+    ),
+    error = function(e) {
+      list(
+        Scenario = row_i$Scenario,
+        p = row_i$p,
+        n = row_i$n,
+        n_groups = row_i$n_groups,
+        truth_profile = row_i$truth_profile,
+        seed = row_i$Seed,
+        weights = list(),
+        effects = list(),
+        accuracy = list(),
+        timing = list(),
+        errors = setNames(
+          rep(conditionMessage(e), 4L),
+          c("qgcomp", "gWQS", "groupWQS", "SGL-WQS")
+        ),
+        selection = list()
+      )
+    }
+  )
+
+  tmp_file <- paste0(out_file, ".tmp.", Sys.getpid())
+  saveRDS(result, tmp_file)
+  if (!file.rename(tmp_file, out_file)) {
+    file.copy(tmp_file, out_file, overwrite = TRUE)
+    unlink(tmp_file)
+  }
+  result
+}
+
+tic("Total group/truth sensitivity analysis time")
+
+old_plan <- future::plan()
+on.exit(future::plan(old_plan), add = TRUE)
+options(future.globals.maxSize = 8 * 1024^3)
+options(parallelly.maxWorkers.localhost = N_WORKERS)
+future::plan(future::multisession, workers = N_WORKERS)
+
+write_checkpoint_status()
+all_results <- list()
+
+for (scenario_i in scenario_levels) {
+  scenario_grid_i <- scenario_grid %>% filter(Scenario == scenario_i)
+  cat(sprintf("\n[%s] processing %d seeds with %d workers\n",
+              scenario_i, nrow(scenario_grid_i), N_WORKERS))
+
+  scenario_results <- future.apply::future_lapply(
+    seq_len(nrow(scenario_grid_i)),
+    function(i) {
+      run_or_load_checkpointed_scenario(
+        row_i = scenario_grid_i[i, , drop = FALSE],
+        index_i = i,
+        total_i = nrow(scenario_grid_i)
+      )
+    },
+    future.seed = TRUE,
+    future.packages = c(
+      "MASS", "qgcomp", "gWQS", "groupWQS", "sglwqs",
+      "dplyr", "tidyr", "purrr"
+    )
+  )
+
+  scenario_file_out <- file.path(
+    scenario_result_dir,
+    sprintf("%s_results.rds", gsub("[^A-Za-z0-9_]+", "_", scenario_i))
+  )
+  saveRDS(scenario_results, scenario_file_out)
+  all_results <- c(all_results, scenario_results)
+  status_now <- write_checkpoint_status()
+  completed_scenario <- sum(status_now$Completed[status_now$Scenario == scenario_i])
+  cat(sprintf("[%s] checkpointed %d/%d scenario files\n",
+              scenario_i, completed_scenario, nrow(scenario_grid_i)))
+}
+
+future::plan(future::sequential)
+
+all_files <- purrr::map2_chr(scenario_grid$Scenario, scenario_grid$Seed, scenario_file)
+if (all(file.exists(all_files))) {
+  all_results <- lapply(all_files, readRDS)
+  saveRDS(all_results, results_file)
+  cat("Saved combined results to:", results_file, "\n")
+} else {
+  missing <- scenario_grid[!file.exists(all_files), , drop = FALSE]
+  cat("Combined results not saved because scenario files are missing:\n")
+  print(missing)
+}
+
+write_checkpoint_status()
+toc()
+
+cat(sprintf("Completed result objects: %d\n", length(all_results)))
+```
+
+# Results
+
+```{r aggregate-results, cache=FALSE}
+method_levels <- c("qgcomp", "gWQS", "groupWQS", "SGL-WQS")
+
+accuracy_df <- purrr::map_dfr(all_results, function(res) {
+  purrr::imap_dfr(res$accuracy, function(acc, method) {
+    data.frame(
+      Scenario = res$Scenario,
+      p = res$p,
+      n = res$n,
+      n_groups = res$n_groups,
+      truth_profile = res$truth_profile,
+      Seed = res$seed,
+      Method = method,
+      Active_Direction_Accuracy = as.numeric(acc),
+      stringsAsFactors = FALSE
+    )
+  })
+}) %>%
+  mutate(Method = factor(Method, levels = method_levels))
+
+weights_df <- purrr::map_dfr(all_results, function(res) {
+  bind_rows(res$weights) %>%
+    mutate(
+      Scenario = res$Scenario,
+      n = res$n,
+      n_groups = res$n_groups,
+      truth_profile = res$truth_profile
+    )
+})
+
+effects_df <- purrr::map_dfr(all_results, function(res) {
+  bind_rows(res$effects) %>%
+    mutate(
+      Scenario = res$Scenario,
+      n = res$n,
+      n_groups = res$n_groups,
+      truth_profile = res$truth_profile
+    )
+}) %>%
+  mutate(Method = factor(Method, levels = method_levels))
+
+timing_df <- purrr::map_dfr(all_results, function(res) {
+  purrr::imap_dfr(res$timing, function(elapsed, method) {
+    data.frame(
+      Scenario = res$Scenario,
+      p = res$p,
+      n = res$n,
+      n_groups = res$n_groups,
+      truth_profile = res$truth_profile,
+      Seed = res$seed,
+      Method = method,
+      Seconds = as.numeric(elapsed),
+      stringsAsFactors = FALSE
+    )
+  })
+}) %>%
+  mutate(Method = factor(Method, levels = method_levels))
+
+error_df <- purrr::map_dfr(all_results, function(res) {
+  if (length(res$errors) == 0L) {
+    return(data.frame())
+  }
+  purrr::imap_dfr(res$errors, function(msg, method) {
+    data.frame(
+      Scenario = res$Scenario,
+      p = res$p,
+      n = res$n,
+      n_groups = res$n_groups,
+      truth_profile = res$truth_profile,
+      Seed = res$seed,
+      Method = method,
+      Error = msg,
+      stringsAsFactors = FALSE
+    )
+  })
+})
+if (nrow(error_df) == 0L) {
+  error_df <- data.frame(
+    Scenario = character(),
+    p = integer(),
+    n = integer(),
+    n_groups = integer(),
+    truth_profile = character(),
+    Seed = numeric(),
+    Method = factor(levels = method_levels),
+    Error = character()
+  )
+} else {
+  error_df <- error_df %>%
+    mutate(Method = factor(Method, levels = method_levels))
+}
+
+selection_df <- purrr::map_dfr(all_results, function(res) {
+  bind_rows(res$selection) %>%
+    mutate(
+      Scenario = res$Scenario,
+      n = res$n,
+      n_groups = res$n_groups,
+      truth_profile = res$truth_profile
+    )
+})
+
+truth_df <- purrr::pmap_dfr(SENS_SCENARIOS, function(Scenario, n, p, n_groups, truth_profile, seed_count) {
+  make_truth(p = p, n_groups = n_groups, truth_profile = truth_profile)$truth %>%
+    mutate(
+      Scenario = Scenario,
+      p = p,
+      n = n,
+      n_groups = n_groups,
+      truth_profile = truth_profile,
+      seed_count = seed_count
+    )
+})
+
+weight_share_df <- purrr::map_dfr(split(weights_df, weights_df$Scenario), function(w_df) {
+  scenario_i <- unique(w_df$Scenario)
+  build_weight_share_table(
+    w_df,
+    truth_df %>%
+      filter(Scenario == scenario_i) %>%
+      select(Variable, True_Beta, Group, True_Direction, IsActive, IsActiveGroup)
+  ) %>%
+    mutate(
+      Scenario = scenario_i,
+      n = unique(w_df$n),
+      n_groups = unique(w_df$n_groups),
+      truth_profile = unique(w_df$truth_profile)
+    )
+})
+```
+
+## Failure and Convergence Summary
+
+```{r failure-summary, cache=FALSE}
+attempts_df <- purrr::map_dfr(method_levels, function(method) {
+  scenario_grid %>%
+    select(Scenario, p, n, n_groups, truth_profile, seed_count, Seed) %>%
+    mutate(Method = method)
+})
+
+failure_summary <- attempts_df %>%
+  left_join(error_df %>% mutate(Failed = TRUE),
+            by = c("Scenario", "p", "n", "n_groups", "truth_profile", "Seed", "Method")) %>%
+  mutate(Failed = replace_na(Failed, FALSE)) %>%
+  group_by(Scenario, p, n, n_groups, truth_profile, Method) %>%
+  summarize(
+    Attempts = n(),
+    Failures = sum(Failed),
+    Failure_Rate = Failures / Attempts,
+    .groups = "drop"
+  )
+
+kable(failure_summary, digits = 3,
+      caption = "Method failures by group/truth sensitivity scenario") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+
+if (nrow(error_df) > 0L) {
+  kable(error_df %>% arrange(Scenario, Method, Seed),
+        caption = "Failure messages") %>%
+    kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+}
+```
+
+```{r failure-plot, fig.height=6, fig.width=10, cache=FALSE}
+p_failure <- ggplot(failure_summary,
+                    aes(x = factor(Scenario, levels = scenario_levels),
+                        y = Failure_Rate, fill = Method)) +
+  geom_col(position = position_dodge(width = 0.8), width = 0.7) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 1)) +
+  labs(
+    title = "Failure Rate by Group/Truth Scenario",
+    x = NULL,
+    y = "Failure rate"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom", axis.text.x = element_text(angle = 35, hjust = 1))
+
+p_failure
+ggsave(file.path(fig_dir, "Fig_group_truth_failure_rate.pdf"), p_failure, width = 12, height = 6)
+ggsave(file.path(fig_dir, "Fig_group_truth_failure_rate.tiff"), p_failure, width = 12, height = 6, dpi = 300)
+```
+
+## Active Direction Detection
+
+```{r active-direction-summary, cache=FALSE}
+accuracy_summary <- accuracy_df %>%
+  group_by(Scenario, p, n, n_groups, truth_profile, Method) %>%
+  summarize(
+    Mean = mean(Active_Direction_Accuracy, na.rm = TRUE),
+    SD = sd(Active_Direction_Accuracy, na.rm = TRUE),
+    N = sum(!is.na(Active_Direction_Accuracy)),
+    .groups = "drop"
+  )
+
+kable(accuracy_summary, digits = 3,
+      caption = "Active-component direction accuracy") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+```{r active-direction-plot, fig.height=7, fig.width=10, cache=FALSE}
+p_acc <- ggplot(accuracy_summary,
+                aes(x = factor(Scenario, levels = scenario_levels),
+                    y = Mean, color = Method, group = Method)) +
+  geom_point(size = 2.5) +
+  geom_errorbar(aes(ymin = pmax(0, Mean - SD), ymax = pmin(1, Mean + SD)),
+                width = 0.25, alpha = 0.6,
+                position = position_dodge(width = 0.35)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 1)) +
+  labs(
+    title = "Active-Component Direction Accuracy",
+    subtitle = "Accuracy is calculated only among truly active components.",
+    x = NULL,
+    y = "Mean accuracy +/- SD"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom", axis.text.x = element_text(angle = 35, hjust = 1))
+
+p_acc
+ggsave(file.path(fig_dir, "Fig_group_truth_active_direction_accuracy.pdf"), p_acc, width = 12, height = 7)
+ggsave(file.path(fig_dir, "Fig_group_truth_active_direction_accuracy.tiff"), p_acc, width = 12, height = 7, dpi = 300)
+```
+
+## Weight Concentration
+
+```{r weight-concentration-summary, cache=FALSE}
+active_weight_share <- weight_share_df %>%
+  group_by(Scenario, Method, p, n, n_groups, truth_profile, Seed, IsActive) %>%
+  summarize(WeightShare = sum(NormWeight, na.rm = TRUE), .groups = "drop") %>%
+  filter(IsActive) %>%
+  group_by(Scenario, p, n, n_groups, truth_profile, Method) %>%
+  summarize(
+    Mean = mean(WeightShare, na.rm = TRUE),
+    SD = sd(WeightShare, na.rm = TRUE),
+    N = n(),
+    .groups = "drop"
+  )
+
+kable(active_weight_share, digits = 3,
+      caption = "Normalized weight share assigned to truly active components") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+```{r weight-concentration-plot, fig.height=7, fig.width=10, cache=FALSE}
+p_weight <- ggplot(active_weight_share,
+                   aes(x = factor(Scenario, levels = scenario_levels),
+                       y = Mean, color = Method, group = Method)) +
+  geom_point(size = 2.5) +
+  geom_errorbar(aes(ymin = pmax(0, Mean - SD), ymax = pmin(1, Mean + SD)),
+                width = 0.25, alpha = 0.6,
+                position = position_dodge(width = 0.35)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 1)) +
+  labs(
+    title = "Weight Concentration on Active Components",
+    subtitle = "Weights are normalized within each method, scenario, and seed before summarization.",
+    x = NULL,
+    y = "Active-component weight share"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom", axis.text.x = element_text(angle = 35, hjust = 1))
+
+p_weight
+ggsave(file.path(fig_dir, "Fig_group_truth_active_weight_share.pdf"), p_weight, width = 12, height = 7)
+ggsave(file.path(fig_dir, "Fig_group_truth_active_weight_share.tiff"), p_weight, width = 12, height = 7, dpi = 300)
+```
+
+```{r null-group-leakage, fig.height=7, fig.width=11, cache=FALSE}
+group_weight_share <- weight_share_df %>%
+  group_by(Scenario, Method, p, n, n_groups, truth_profile, Seed, Group, IsActiveGroup) %>%
+  summarize(GroupWeightShare = sum(NormWeight, na.rm = TRUE), .groups = "drop")
+
+null_group_leakage <- group_weight_share %>%
+  group_by(Scenario, Method, p, n, n_groups, truth_profile, Seed, IsActiveGroup) %>%
+  summarize(TotalShare = sum(GroupWeightShare, na.rm = TRUE), .groups = "drop") %>%
+  filter(!IsActiveGroup) %>%
+  group_by(Scenario, p, n, n_groups, truth_profile, Method) %>%
+  summarize(
+    Mean = mean(TotalShare, na.rm = TRUE),
+    SD = sd(TotalShare, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+kable(null_group_leakage, digits = 3,
+      caption = "Total normalized weight share assigned to null groups") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+
+p_null <- ggplot(null_group_leakage,
+                 aes(x = factor(Scenario, levels = scenario_levels),
+                     y = Mean, color = Method, group = Method)) +
+  geom_point(size = 2.5) +
+  geom_errorbar(aes(ymin = pmax(0, Mean - SD), ymax = pmin(1, Mean + SD)),
+                width = 0.25, alpha = 0.6,
+                position = position_dodge(width = 0.35)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 1)) +
+  labs(
+    title = "Weight Leakage to Null Groups",
+    x = NULL,
+    y = "Null-group weight share"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom", axis.text.x = element_text(angle = 35, hjust = 1))
+
+p_null
+ggsave(file.path(fig_dir, "Fig_group_truth_null_group_leakage.pdf"), p_null, width = 12, height = 7)
+ggsave(file.path(fig_dir, "Fig_group_truth_null_group_leakage.tiff"), p_null, width = 12, height = 7, dpi = 300)
+```
+
+## SGL-WQS Bootstrap Selection Frequency
+
+```{r sglwqs-selection-frequency, fig.height=7, fig.width=10, cache=FALSE}
+if (nrow(selection_df) > 0L) {
+  sgl_selection_summary <- selection_df %>%
+    group_by(Scenario, p, n, n_groups, truth_profile, Seed, IsActive) %>%
+    summarize(MeanSelFreq = mean(SelFreq, na.rm = TRUE), .groups = "drop") %>%
+    group_by(Scenario, p, n, n_groups, truth_profile, IsActive) %>%
+    summarize(
+      Mean = mean(MeanSelFreq, na.rm = TRUE),
+      SD = sd(MeanSelFreq, na.rm = TRUE),
+      .groups = "drop"
+    )
+
+  kable(sgl_selection_summary, digits = 3,
+        caption = "SGL-WQS mean bootstrap selection frequency") %>%
+    kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+
+  p_sel <- ggplot(sgl_selection_summary,
+                  aes(x = factor(Scenario, levels = scenario_levels),
+                      y = Mean, color = IsActive, group = IsActive)) +
+    geom_point(size = 2.5) +
+    geom_errorbar(aes(ymin = pmax(0, Mean - SD), ymax = pmin(1, Mean + SD)),
+                  width = 0.25, alpha = 0.6,
+                  position = position_dodge(width = 0.35)) +
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 1)) +
+    labs(
+      title = "SGL-WQS Bootstrap Selection Frequency",
+      x = NULL,
+      y = "Mean selection frequency",
+      color = "Truly active"
+    ) +
+    theme_minimal() +
+    theme(legend.position = "bottom", axis.text.x = element_text(angle = 35, hjust = 1))
+
+  p_sel
+  ggsave(file.path(fig_dir, "Fig_group_truth_sglwqs_selection_frequency.pdf"), p_sel, width = 12, height = 7)
+  ggsave(file.path(fig_dir, "Fig_group_truth_sglwqs_selection_frequency.tiff"), p_sel, width = 12, height = 7, dpi = 300)
+} else {
+  cat("No SGL-WQS selection frequency data were available.\n")
+}
+```
+
+## Runtime
+
+```{r runtime-summary, cache=FALSE}
+runtime_summary <- timing_df %>%
+  group_by(Scenario, p, n, n_groups, truth_profile, Method) %>%
+  summarize(
+    Median_Seconds = median(Seconds, na.rm = TRUE),
+    Mean_Seconds = mean(Seconds, na.rm = TRUE),
+    SD_Seconds = sd(Seconds, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+kable(runtime_summary, digits = 2,
+      caption = "Per-scenario runtime by method") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+```{r runtime-plot, fig.height=7, fig.width=10, cache=FALSE}
+p_runtime <- ggplot(runtime_summary,
+                    aes(x = factor(Scenario, levels = scenario_levels),
+                        y = Median_Seconds, color = Method, group = Method)) +
+  geom_point(size = 2.5) +
+  scale_y_log10() +
+  labs(
+    title = "Median Runtime per Scenario",
+    subtitle = "Log-scaled y-axis.",
+    x = NULL,
+    y = "Median seconds"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom", axis.text.x = element_text(angle = 35, hjust = 1))
+
+p_runtime
+ggsave(file.path(fig_dir, "Fig_group_truth_runtime.pdf"), p_runtime, width = 12, height = 7)
+ggsave(file.path(fig_dir, "Fig_group_truth_runtime.tiff"), p_runtime, width = 12, height = 7, dpi = 300)
+```
+
+## Effect Estimate Summary
+
+```{r effect-summary, cache=FALSE}
+effect_summary <- effects_df %>%
+  group_by(Scenario, p, n, n_groups, truth_profile, Method, Effect_Type) %>%
+  summarize(
+    Mean = mean(Estimate, na.rm = TRUE),
+    SD = sd(Estimate, na.rm = TRUE),
+    N = sum(!is.na(Estimate)),
+    .groups = "drop"
+  )
+
+kable(effect_summary, digits = 3,
+      caption = "Mixture/index effect estimates by method and sensitivity scenario") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+# Notes for Manuscript Use
+
+The primary manuscript table should emphasize:
+
+- failure/convergence rates across p;
+- active-component direction accuracy;
+- active-component weight concentration;
+- weight leakage to null groups;
+- runtime as a scalability diagnostic.
+
+For qgcomp, weights are interpreted as post-hoc decomposition of the fitted overall mixture effect rather than as direct evidence of sparse component discovery. For groupWQS, one coefficient sign is assigned to all components within a group, so the mixed-direction group creates an expected structural ceiling for active-component direction accuracy.
+
+# Session Information
+
+```{r session-info, cache=FALSE}
+sessionInfo()
+```

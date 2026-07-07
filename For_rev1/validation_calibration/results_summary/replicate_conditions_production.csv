@@ -1,0 +1,11 @@
+scenario_id,scenario_family,effect,outcome_family,n,within_r,between_r,reps,n_boot,train_prop,n_quantiles,nfolds,nlambda,lambda,minor_threshold,asparse
+global_binary_n500_w0p2_b0,global_binary,global_null,binomial,500,0.2,0,500,200,0.6,4,10,100,lambda.min,0.1,0.05
+global_binary_n5000_w0p2_b0,global_binary,global_null,binomial,5000,0.2,0,500,200,0.6,4,10,100,lambda.min,0.1,0.05
+global_binary_n500_w0p95_b0,global_binary,global_null,binomial,500,0.95,0,500,200,0.6,4,10,100,lambda.min,0.1,0.05
+global_binary_n5000_w0p95_b0,global_binary,global_null,binomial,5000,0.95,0,500,200,0.6,4,10,100,lambda.min,0.1,0.05
+partial_binary_n500_w0p6_b0,partial_binary,partial_null,binomial,500,0.6,0,300,200,0.6,4,10,100,lambda.min,0.1,0.05
+partial_binary_n5000_w0p6_b0,partial_binary,partial_null,binomial,5000,0.6,0,300,200,0.6,4,10,100,lambda.min,0.1,0.05
+partial_binary_n500_w0p6_b0p3,partial_binary,partial_null,binomial,500,0.6,0.3,300,200,0.6,4,10,100,lambda.min,0.1,0.05
+partial_binary_n5000_w0p6_b0p3,partial_binary,partial_null,binomial,5000,0.6,0.3,300,200,0.6,4,10,100,lambda.min,0.1,0.05
+gaussian_null_n1000_w0p2_b0,gaussian_null,gaussian_null,gaussian,1000,0.2,0,200,200,0.6,4,10,100,lambda.min,0.1,0.05
+gaussian_null_n1000_w0p95_b0,gaussian_null,gaussian_null,gaussian,1000,0.95,0,200,200,0.6,4,10,100,lambda.min,0.1,0.05

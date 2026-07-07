@@ -1,0 +1,872 @@
+"method","seed","term","group","direction","estimate","std_error","p_value"
+"qgcomp",NA,"psi1","Overall mixture","Net",0.0451860198095118,0.0362201982687391,0.212341750921585
+"gWQS",71,"pwqs","Overall mixture","Positive",0.298250839069672,0.0849482313576083,0.000471148628592032
+"gWQS",71,"nwqs","Overall mixture","Negative",-0.20952273832467,0.0795845166961294,0.00863209534055109
+"groupWQS",71,"GWQS1","Aromatic hydrocarbons","Combined",-0.0694938606672161,0.0479497523549205,0.147634480906896
+"groupWQS",71,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.190989917440519,0.0540112905589654,0.000428840402319646
+"groupWQS",71,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.172877614409999,0.0555577734034717,0.00192477401519063
+"groupWQS",71,"GWQS4","Reactive aldehydes","Combined",0.0644023060377406,0.0452811931151731,0.155326716107963
+"SGL-WQS (unweighted, lambda=0)",71,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",71,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",71,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",71,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",71,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",71,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",71,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",71,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",71,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0608064266443657,0.0277524668387859,0.0285609043468285
+"SGL-WQS (unweighted, lambda.min path)",71,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0495613416567979,0.0277771401436735,0.0745296002855744
+"SGL-WQS (unweighted, lambda.min path)",71,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.203158224019538,0.038103589468929,1.07880475078268e-07
+"SGL-WQS (unweighted, lambda.min path)",71,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.062756700426326,0.0258608213257915,0.0153213190658968
+"SGL-WQS (unweighted, lambda.min path)",71,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.0985584685022719,0.0248802911102288,7.70636008608452e-05
+"SGL-WQS (unweighted, lambda.min path)",71,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.146354447125031,0.031931892006132,4.8490414430712e-06
+"SGL-WQS (unweighted, lambda.min path)",71,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0425158801642482,0.0214293436142664,0.047387399318628
+"SGL-WQS (unweighted, lambda.min path)",71,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0444384631883588,0.025454154779593,0.0809899695834488
+"SGL-WQS (survey, lambda.min path)",71,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.07027680415953,0.0454508762119686,0.165972809030515
+"SGL-WQS (survey, lambda.min path)",71,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0705446816155162,0.0336439748183877,0.0742210796551845
+"SGL-WQS (survey, lambda.min path)",71,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.170555536941386,0.0432072020043439,0.00555055596250636
+"SGL-WQS (survey, lambda.min path)",71,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0740767562334228,0.0286530298611588,0.0361915884506879
+"SGL-WQS (survey, lambda.min path)",71,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.114998796713884,0.0330929049199542,0.0103354193259645
+"SGL-WQS (survey, lambda.min path)",71,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.176061742776812,0.0327156034407897,0.00102861915828132
+"SGL-WQS (survey, lambda.min path)",71,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0661478225950416,0.0273252752858501,0.0460410475770136
+"gWQS",42,"pwqs","Overall mixture","Positive",0.195230388346222,0.0978080068351511,0.0462563851031303
+"gWQS",42,"nwqs","Overall mixture","Negative",-0.223660523376748,0.0915738434215591,0.0147988756956445
+"groupWQS",42,"GWQS1","Aromatic hydrocarbons","Combined",-0.0688978177139042,0.0552838484338233,0.21302640719545
+"groupWQS",42,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.152120384155271,0.0574359947593317,0.00823993384393285
+"groupWQS",42,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.217352633230325,0.0590532745207955,0.000247883635354535
+"groupWQS",42,"GWQS4","Reactive aldehydes","Combined",0.0150267321016504,0.0482606302725951,0.755601339030881
+"SGL-WQS (unweighted, lambda=0)",42,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",42,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",42,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",42,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",42,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",42,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",42,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",42,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",42,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.058573424008825,0.026879290723051,0.0294345489682036
+"SGL-WQS (unweighted, lambda.min path)",42,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0495184005950961,0.0277650717134265,0.0746549611650118
+"SGL-WQS (unweighted, lambda.min path)",42,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.202716724843643,0.0380412899222853,1.09577889874952e-07
+"SGL-WQS (unweighted, lambda.min path)",42,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.062151524426444,0.0257749724388052,0.0159817833446854
+"SGL-WQS (unweighted, lambda.min path)",42,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.0972756449243614,0.0247201537437466,8.59151958060006e-05
+"SGL-WQS (unweighted, lambda.min path)",42,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.144326212563266,0.0315954137955881,5.21495255313095e-06
+"SGL-WQS (unweighted, lambda.min path)",42,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0424789431573438,0.0214292490875586,0.0475790537862996
+"SGL-WQS (unweighted, lambda.min path)",42,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0442463342075547,0.0254369494160948,0.0821040577731534
+"SGL-WQS (survey, lambda.min path)",42,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0710474690950158,0.044760237013899,0.156468901576321
+"SGL-WQS (survey, lambda.min path)",42,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0708146510856851,0.0336813056438985,0.0735999553312354
+"SGL-WQS (survey, lambda.min path)",42,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.170797968833926,0.0432130141308916,0.00551457344316381
+"SGL-WQS (survey, lambda.min path)",42,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0751913788042394,0.0286045901159343,0.0339793467765964
+"SGL-WQS (survey, lambda.min path)",42,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.11552760595841,0.0331917891096718,0.0102578396073976
+"SGL-WQS (survey, lambda.min path)",42,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.178773059966551,0.032695866923091,0.000938095497449804
+"SGL-WQS (survey, lambda.min path)",42,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.06516484801346,0.0267330517067787,0.0449159394016303
+"gWQS",123,"pwqs","Overall mixture","Positive",0.210613793123852,0.0835652694870877,0.0119080567939145
+"gWQS",123,"nwqs","Overall mixture","Negative",-0.261973212929095,0.0794038417889684,0.00101023886830125
+"groupWQS",123,"GWQS1","Aromatic hydrocarbons","Combined",-0.0417589805901757,0.0510186109941789,0.413306766499465
+"groupWQS",123,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.220732927141561,0.0550662900529104,6.66749270131357e-05
+"groupWQS",123,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.239991699225439,0.0626341116961435,0.000137013729839114
+"groupWQS",123,"GWQS4","Reactive aldehydes","Combined",-0.0116525136314721,0.0501674214911244,0.816384307510008
+"SGL-WQS (unweighted, lambda=0)",123,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",123,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",123,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",123,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",123,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",123,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",123,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",123,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",123,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0605779347143016,0.0276606256739366,0.0286324151392735
+"SGL-WQS (unweighted, lambda.min path)",123,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0495452390906895,0.027776061970799,0.0746125766403257
+"SGL-WQS (unweighted, lambda.min path)",123,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.203082189053132,0.0380916795617962,1.08073516850649e-07
+"SGL-WQS (unweighted, lambda.min path)",123,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.062680826148101,0.02585048107637,0.0154042265014567
+"SGL-WQS (unweighted, lambda.min path)",123,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.0984321967874933,0.0248658972594184,7.79607208689549e-05
+"SGL-WQS (unweighted, lambda.min path)",123,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.146107183300058,0.0318911446939195,4.89280217444426e-06
+"SGL-WQS (unweighted, lambda.min path)",123,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0425045029342853,0.021429268043742,0.0474458824207525
+"SGL-WQS (unweighted, lambda.min path)",123,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0444195098349898,0.025452338204632,0.0810978342480242
+"SGL-WQS (survey, lambda.min path)",123,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0692529529255589,0.0461985107589419,0.177543595094598
+"SGL-WQS (survey, lambda.min path)",123,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0702164516136599,0.0335940259626459,0.0749537596833152
+"SGL-WQS (survey, lambda.min path)",123,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.170239288023872,0.0432020991238142,0.00559951803963106
+"SGL-WQS (survey, lambda.min path)",123,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0727423390731086,0.0287016312147354,0.0389797219733802
+"SGL-WQS (survey, lambda.min path)",123,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.114370527198046,0.0329742854701771,0.0104273417714745
+"SGL-WQS (survey, lambda.min path)",123,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.17274655683651,0.032700712069518,0.00114474256759436
+"SGL-WQS (survey, lambda.min path)",123,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0672659259312194,0.0279873049986559,0.0472265821141823
+"gWQS",256,"pwqs","Overall mixture","Positive",0.344208483803549,0.100242608151487,0.00062346817595694
+"gWQS",256,"nwqs","Overall mixture","Negative",-0.28117244704615,0.0929450612073078,0.00255837669079597
+"groupWQS",256,"GWQS1","Aromatic hydrocarbons","Combined",0.00133735025326172,0.0461575151413489,0.976892680752455
+"groupWQS",256,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.175215331246773,0.0532749099864333,0.00104870766075712
+"groupWQS",256,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.22987992028161,0.0546985181170625,2.9275619846254e-05
+"groupWQS",256,"GWQS4","Reactive aldehydes","Combined",0.0579058593242296,0.0450428538472673,0.198955197200144
+"SGL-WQS (unweighted, lambda=0)",256,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",256,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",256,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",256,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",256,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",256,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",256,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",256,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",256,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0587895928958014,0.026961253758389,0.0293310910872356
+"SGL-WQS (unweighted, lambda.min path)",256,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0495118714391248,0.0277664031154028,0.0747071476025112
+"SGL-WQS (unweighted, lambda.min path)",256,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.202736318226501,0.0380429382123603,1.09408928749102e-07
+"SGL-WQS (unweighted, lambda.min path)",256,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0622022413771611,0.0257821803224658,0.0159253694873475
+"SGL-WQS (unweighted, lambda.min path)",256,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.097410404700326,0.0247388658118892,8.50421174503117e-05
+"SGL-WQS (unweighted, lambda.min path)",256,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.144492200644232,0.0316233743007524,5.18523704883891e-06
+"SGL-WQS (unweighted, lambda.min path)",256,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0424761800397349,0.0214292027498426,0.0475930102766421
+"SGL-WQS (unweighted, lambda.min path)",256,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0442658631848762,0.0254385993026007,0.0819889935120238
+"SGL-WQS (survey, lambda.min path)",256,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.07027680415953,0.0454508762119686,0.165972809030515
+"SGL-WQS (survey, lambda.min path)",256,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0705446816155162,0.0336439748183877,0.0742210796551845
+"SGL-WQS (survey, lambda.min path)",256,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.170555536941386,0.0432072020043439,0.00555055596250636
+"SGL-WQS (survey, lambda.min path)",256,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0740767562334228,0.0286530298611588,0.0361915884506879
+"SGL-WQS (survey, lambda.min path)",256,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.114998796713884,0.0330929049199542,0.0103354193259645
+"SGL-WQS (survey, lambda.min path)",256,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.176061742776812,0.0327156034407897,0.00102861915828132
+"SGL-WQS (survey, lambda.min path)",256,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0661478225950416,0.0273252752858501,0.0460410475770136
+"gWQS",314,"pwqs","Overall mixture","Positive",0.348897556145329,0.088371309847057,8.51424262689051e-05
+"gWQS",314,"nwqs","Overall mixture","Negative",-0.331047415463893,0.085540035729495,0.000116928070950768
+"groupWQS",314,"GWQS1","Aromatic hydrocarbons","Combined",-0.0680506736895329,0.046439992135236,0.143209756568522
+"groupWQS",314,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.0643462170266718,0.040370694393301,0.11134729538896
+"groupWQS",314,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.106724027765478,0.0529688404316118,0.0442468024066928
+"groupWQS",314,"GWQS4","Reactive aldehydes","Combined",0.0257593570536036,0.0436470072319216,0.555236164892735
+"SGL-WQS (unweighted, lambda=0)",314,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",314,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",314,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",314,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",314,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",314,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",314,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",314,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",314,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637462886507905,0.0289756223880316,0.0279172403405313
+"SGL-WQS (unweighted, lambda.min path)",314,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.050524911227461,0.0277883488843735,0.0691772963112781
+"SGL-WQS (unweighted, lambda.min path)",314,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206151909425065,0.0386018663272361,1.02879159255479e-07
+"SGL-WQS (unweighted, lambda.min path)",314,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0652569169535444,0.026126228832302,0.012575328824964
+"SGL-WQS (unweighted, lambda.min path)",314,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100509108538247,0.0250599515125703,6.26756311323546e-05
+"SGL-WQS (unweighted, lambda.min path)",314,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152525659674172,0.0329797377797278,3.98060968004775e-06
+"SGL-WQS (unweighted, lambda.min path)",314,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430801017451676,0.0214346455052128,0.0445781902153595
+"SGL-WQS (unweighted, lambda.min path)",314,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.044577939706803,0.0254785574554168,0.080331094789221
+"SGL-WQS (survey, lambda.min path)",314,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0710474690950158,0.044760237013899,0.156468901576321
+"SGL-WQS (survey, lambda.min path)",314,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0708146510856851,0.0336813056438985,0.0735999553312354
+"SGL-WQS (survey, lambda.min path)",314,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.170797968833926,0.0432130141308916,0.00551457344316381
+"SGL-WQS (survey, lambda.min path)",314,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0751913788042394,0.0286045901159343,0.0339793467765964
+"SGL-WQS (survey, lambda.min path)",314,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.11552760595841,0.0331917891096718,0.0102578396073976
+"SGL-WQS (survey, lambda.min path)",314,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.178773059966551,0.032695866923091,0.000938095497449804
+"SGL-WQS (survey, lambda.min path)",314,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.06516484801346,0.0267330517067787,0.0449159394016303
+"gWQS",500,"pwqs","Overall mixture","Positive",0.235406516676795,0.0842787623899446,0.00534072787393301
+"gWQS",500,"nwqs","Overall mixture","Negative",-0.219702736223064,0.0762893679952839,0.00408214350259274
+"groupWQS",500,"GWQS1","Aromatic hydrocarbons","Combined",-0.0307624772437373,0.046259477610248,0.506238515029624
+"groupWQS",500,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.124344829961873,0.0530642548045405,0.0193526974588117
+"groupWQS",500,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.16360805048419,0.0508299060779766,0.00133819038603798
+"groupWQS",500,"GWQS4","Reactive aldehydes","Combined",0.0385548973820059,0.044142151829915,0.382686699330879
+"SGL-WQS (unweighted, lambda=0)",500,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",500,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",500,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",500,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",500,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",500,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",500,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",500,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",500,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0607318752773225,0.0277224418501216,0.0285838269104537
+"SGL-WQS (unweighted, lambda.min path)",500,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0495557649366999,0.0277767921128832,0.074558592600155
+"SGL-WQS (unweighted, lambda.min path)",500,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.203132440463563,0.038099532817237,1.07944408635425e-07
+"SGL-WQS (unweighted, lambda.min path)",500,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0627314268181235,0.0258573959995108,0.0153489594387435
+"SGL-WQS (unweighted, lambda.min path)",500,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.0985172696512561,0.0248756183596197,7.73563179518198e-05
+"SGL-WQS (unweighted, lambda.min path)",500,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.146272519252189,0.0319183922169586,4.86349137744154e-06
+"SGL-WQS (unweighted, lambda.min path)",500,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0425119378877179,0.0214293170097784,0.0474076528083324
+"SGL-WQS (unweighted, lambda.min path)",500,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0444322855770455,0.0254535594416536,0.0810250734962801
+"SGL-WQS (survey, lambda.min path)",500,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0710474690950158,0.044760237013899,0.156468901576321
+"SGL-WQS (survey, lambda.min path)",500,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0708146510856851,0.0336813056438985,0.0735999553312354
+"SGL-WQS (survey, lambda.min path)",500,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.170797968833926,0.0432130141308916,0.00551457344316381
+"SGL-WQS (survey, lambda.min path)",500,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0751913788042394,0.0286045901159343,0.0339793467765964
+"SGL-WQS (survey, lambda.min path)",500,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.11552760595841,0.0331917891096718,0.0102578396073976
+"SGL-WQS (survey, lambda.min path)",500,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.178773059966551,0.032695866923091,0.000938095497449804
+"SGL-WQS (survey, lambda.min path)",500,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.06516484801346,0.0267330517067787,0.0449159394016303
+"gWQS",617,"pwqs","Overall mixture","Positive",0.36605099419912,0.096102397480769,0.000149966059231684
+"gWQS",617,"nwqs","Overall mixture","Negative",-0.380946910116459,0.0871948106531507,1.408787964438e-05
+"groupWQS",617,"GWQS1","Aromatic hydrocarbons","Combined",-0.0869592337166182,0.0463840382485659,0.0611801316884196
+"groupWQS",617,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.10162382795625,0.047628345435594,0.0331648520267061
+"groupWQS",617,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.165214131380844,0.0566358799723407,0.00362916115577271
+"groupWQS",617,"GWQS4","Reactive aldehydes","Combined",0.0483302770576308,0.0479185579058517,0.313467835895607
+"SGL-WQS (unweighted, lambda=0)",617,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",617,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",617,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",617,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",617,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",617,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",617,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",617,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",617,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0598952285944618,0.0273894677956864,0.0288688696696224
+"SGL-WQS (unweighted, lambda.min path)",617,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0495137860874316,0.0277726368825222,0.0747610967204405
+"SGL-WQS (unweighted, lambda.min path)",617,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.202903547622165,0.0380646206786265,1.0860508781544e-07
+"SGL-WQS (unweighted, lambda.min path)",617,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0624785847885531,0.0258221006996531,0.0156241912083778
+"SGL-WQS (unweighted, lambda.min path)",617,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.0980529440294391,0.0248212364054527,8.0645358473524e-05
+"SGL-WQS (unweighted, lambda.min path)",617,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.14543048140999,0.0317794703523204,5.01455675338865e-06
+"SGL-WQS (unweighted, lambda.min path)",617,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.042481995107078,0.021429140729619,0.0475619907171131
+"SGL-WQS (unweighted, lambda.min path)",617,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0443622791383892,0.025447028222022,0.0814264364849201
+"SGL-WQS (survey, lambda.min path)",617,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0692529529255589,0.0461985107589419,0.177543595094598
+"SGL-WQS (survey, lambda.min path)",617,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0702164516136599,0.0335940259626459,0.0749537596833152
+"SGL-WQS (survey, lambda.min path)",617,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.170239288023872,0.0432020991238142,0.00559951803963106
+"SGL-WQS (survey, lambda.min path)",617,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0727423390731086,0.0287016312147354,0.0389797219733802
+"SGL-WQS (survey, lambda.min path)",617,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.114370527198046,0.0329742854701771,0.0104273417714745
+"SGL-WQS (survey, lambda.min path)",617,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.17274655683651,0.032700712069518,0.00114474256759436
+"SGL-WQS (survey, lambda.min path)",617,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0672659259312194,0.0279873049986559,0.0472265821141823
+"gWQS",789,"pwqs","Overall mixture","Positive",0.441349636392536,0.0942900171537898,3.35862896881443e-06
+"gWQS",789,"nwqs","Overall mixture","Negative",-0.406961048632048,0.0872698513891792,3.64939205153907e-06
+"groupWQS",789,"GWQS1","Aromatic hydrocarbons","Combined",-0.0285454444217233,0.0445190504054358,0.521574405930073
+"groupWQS",789,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.114486716890085,0.0528514106149121,0.0305834046057218
+"groupWQS",789,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.154147401866279,0.0549681623495936,0.0051617486227265
+"groupWQS",789,"GWQS4","Reactive aldehydes","Combined",0.0544235426810862,0.0463790984544826,0.240956213205352
+"SGL-WQS (unweighted, lambda=0)",789,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",789,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",789,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",789,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",789,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",789,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",789,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",789,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",789,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0580258808600694,0.0266746407306789,0.0297189646850836
+"SGL-WQS (unweighted, lambda.min path)",789,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0495449591979745,0.0277615181736465,0.0744623734955336
+"SGL-WQS (unweighted, lambda.min path)",789,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.202680501526411,0.0380402338681294,1.10057514442947e-07
+"SGL-WQS (unweighted, lambda.min path)",789,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0620216131896678,0.0257571972155566,0.0161300676231666
+"SGL-WQS (unweighted, lambda.min path)",789,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.0969113506431671,0.0246667126386776,8.81591476516643e-05
+"SGL-WQS (unweighted, lambda.min path)",789,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.143924406350116,0.0315269095007832,5.28481965472406e-06
+"SGL-WQS (unweighted, lambda.min path)",789,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0424912887212035,0.0214294144837277,0.047516308363359
+"SGL-WQS (unweighted, lambda.min path)",789,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.044196361575912,0.0254327695537532,0.0823996666544365
+"SGL-WQS (survey, lambda.min path)",789,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.07027680415953,0.0454508762119686,0.165972809030515
+"SGL-WQS (survey, lambda.min path)",789,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0705446816155162,0.0336439748183877,0.0742210796551845
+"SGL-WQS (survey, lambda.min path)",789,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.170555536941386,0.0432072020043439,0.00555055596250636
+"SGL-WQS (survey, lambda.min path)",789,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0740767562334228,0.0286530298611588,0.0361915884506879
+"SGL-WQS (survey, lambda.min path)",789,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.114998796713884,0.0330929049199542,0.0103354193259645
+"SGL-WQS (survey, lambda.min path)",789,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.176061742776812,0.0327156034407897,0.00102861915828132
+"SGL-WQS (survey, lambda.min path)",789,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0661478225950416,0.0273252752858501,0.0460410475770136
+"gWQS",888,"pwqs","Overall mixture","Positive",0.407214124278864,0.0975464096006131,3.30482044388521e-05
+"gWQS",888,"nwqs","Overall mixture","Negative",-0.382734615710611,0.0918399661334756,3.40808475215726e-05
+"groupWQS",888,"GWQS1","Aromatic hydrocarbons","Combined",-0.0585368261982225,0.0495769355009344,0.238053558476229
+"groupWQS",888,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.144622427992444,0.0549473150581011,0.00864745021838943
+"groupWQS",888,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.168015486924215,0.0525030716227679,0.00142661178200455
+"groupWQS",888,"GWQS4","Reactive aldehydes","Combined",0.0633295192149367,0.0468364301053706,0.176702586764359
+"SGL-WQS (unweighted, lambda=0)",888,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",888,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",888,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",888,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",888,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",888,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",888,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",888,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",888,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0583551230093101,0.0267971786419328,0.0295439890368938
+"SGL-WQS (unweighted, lambda.min path)",888,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0495272975171543,0.0277636855364986,0.0745883609587056
+"SGL-WQS (unweighted, lambda.min path)",888,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.202700173588851,0.0380403575768863,1.09759226593544e-07
+"SGL-WQS (unweighted, lambda.min path)",888,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.062100214897499,0.0257678174495673,0.016039629604965
+"SGL-WQS (unweighted, lambda.min path)",888,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.097134689150946,0.0246999632248157,8.68036294743922e-05
+"SGL-WQS (unweighted, lambda.min path)",888,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.144163066596015,0.0315677566016576,5.24374162473182e-06
+"SGL-WQS (unweighted, lambda.min path)",888,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.042482967525731,0.0214293067405089,0.0475586311636812
+"SGL-WQS (unweighted, lambda.min path)",888,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0442264412933141,0.0254352802995722,0.0822215549923257
+"SGL-WQS (survey, lambda.min path)",888,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.07027680415953,0.0454508762119686,0.165972809030515
+"SGL-WQS (survey, lambda.min path)",888,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0705446816155162,0.0336439748183877,0.0742210796551845
+"SGL-WQS (survey, lambda.min path)",888,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.170555536941386,0.0432072020043439,0.00555055596250636
+"SGL-WQS (survey, lambda.min path)",888,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0740767562334228,0.0286530298611588,0.0361915884506879
+"SGL-WQS (survey, lambda.min path)",888,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.114998796713884,0.0330929049199542,0.0103354193259645
+"SGL-WQS (survey, lambda.min path)",888,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.176061742776812,0.0327156034407897,0.00102861915828132
+"SGL-WQS (survey, lambda.min path)",888,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0661478225950416,0.0273252752858501,0.0460410475770136
+"gWQS",999,"pwqs","Overall mixture","Positive",0.200692843491249,0.091755003134435,0.0290078083004438
+"gWQS",999,"nwqs","Overall mixture","Negative",-0.225174778420156,0.0849131924078004,0.00816217419577197
+"groupWQS",999,"GWQS1","Aromatic hydrocarbons","Combined",-0.0667545091392229,0.0478259717451377,0.163158719744269
+"groupWQS",999,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.0832969302394757,0.0449508802590717,0.0642320258259368
+"groupWQS",999,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.0836260622309773,0.0588156633618771,0.155454908748798
+"groupWQS",999,"GWQS4","Reactive aldehydes","Combined",0.0397926347444957,0.0497138748935525,0.42369170292678
+"SGL-WQS (unweighted, lambda=0)",999,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",999,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",999,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",999,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",999,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",999,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",999,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",999,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",999,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0608064266443657,0.0277524668387859,0.0285609043468285
+"SGL-WQS (unweighted, lambda.min path)",999,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0495613416567979,0.0277771401436735,0.0745296002855744
+"SGL-WQS (unweighted, lambda.min path)",999,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.203158224019538,0.038103589468929,1.07880475078268e-07
+"SGL-WQS (unweighted, lambda.min path)",999,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.062756700426326,0.0258608213257915,0.0153213190658968
+"SGL-WQS (unweighted, lambda.min path)",999,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.0985584685022719,0.0248802911102288,7.70636008608452e-05
+"SGL-WQS (unweighted, lambda.min path)",999,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.146354447125031,0.031931892006132,4.8490414430712e-06
+"SGL-WQS (unweighted, lambda.min path)",999,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0425158801642482,0.0214293436142664,0.047387399318628
+"SGL-WQS (unweighted, lambda.min path)",999,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0444384631883588,0.025454154779593,0.0809899695834488
+"SGL-WQS (survey, lambda.min path)",999,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.07027680415953,0.0454508762119686,0.165972809030515
+"SGL-WQS (survey, lambda.min path)",999,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0705446816155162,0.0336439748183877,0.0742210796551845
+"SGL-WQS (survey, lambda.min path)",999,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.170555536941386,0.0432072020043439,0.00555055596250636
+"SGL-WQS (survey, lambda.min path)",999,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0740767562334228,0.0286530298611588,0.0361915884506879
+"SGL-WQS (survey, lambda.min path)",999,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.114998796713884,0.0330929049199542,0.0103354193259645
+"SGL-WQS (survey, lambda.min path)",999,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.176061742776812,0.0327156034407897,0.00102861915828132
+"SGL-WQS (survey, lambda.min path)",999,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0661478225950416,0.0273252752858501,0.0460410475770136
+"gWQS",1001,"pwqs","Overall mixture","Positive",0.271788698602679,0.0875257351327625,0.00196842811605141
+"gWQS",1001,"nwqs","Overall mixture","Negative",-0.253741999886827,0.0841402734463917,0.00264516213872631
+"groupWQS",1001,"GWQS1","Aromatic hydrocarbons","Combined",-0.0480488883270614,0.0479930208985733,0.31704283147794
+"groupWQS",1001,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.145095194724344,0.0548569404529357,0.00832602592688464
+"groupWQS",1001,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.14213278856435,0.0599368834960781,0.0179522000552043
+"groupWQS",1001,"GWQS4","Reactive aldehydes","Combined",0.0553280987527245,0.0474539841780477,0.243981116696547
+"SGL-WQS (unweighted, lambda=0)",1001,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",1001,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",1001,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",1001,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",1001,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",1001,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",1001,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",1001,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",1001,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0562956529323059,0.0260583736263803,0.0308586906935775
+"SGL-WQS (unweighted, lambda.min path)",1001,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0497029347790147,0.0277492127331904,0.0734156680448442
+"SGL-WQS (unweighted, lambda.min path)",1001,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.202738871790181,0.0380792445943876,1.12427733948159e-07
+"SGL-WQS (unweighted, lambda.min path)",1001,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0613219490856467,0.0256921846626114,0.0170853346710178
+"SGL-WQS (unweighted, lambda.min path)",1001,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.0954361165817498,0.0244038577569364,9.49950000047223e-05
+"SGL-WQS (unweighted, lambda.min path)",1001,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.142563696683332,0.0312753797174183,5.45686003177877e-06
+"SGL-WQS (unweighted, lambda.min path)",1001,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0425909404659646,0.0214306682711254,0.0470115801914194
+"SGL-WQS (unweighted, lambda.min path)",1001,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0440297594114854,0.0254175445222527,0.0833764919024323
+"SGL-WQS (survey, lambda.min path)",1001,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.07027680415953,0.0454508762119686,0.165972809030515
+"SGL-WQS (survey, lambda.min path)",1001,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0705446816155162,0.0336439748183877,0.0742210796551845
+"SGL-WQS (survey, lambda.min path)",1001,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.170555536941386,0.0432072020043439,0.00555055596250636
+"SGL-WQS (survey, lambda.min path)",1001,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0740767562334228,0.0286530298611588,0.0361915884506879
+"SGL-WQS (survey, lambda.min path)",1001,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.114998796713884,0.0330929049199542,0.0103354193259645
+"SGL-WQS (survey, lambda.min path)",1001,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.176061742776812,0.0327156034407897,0.00102861915828132
+"SGL-WQS (survey, lambda.min path)",1001,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0661478225950416,0.0273252752858501,0.0460410475770136
+"gWQS",1123,"pwqs","Overall mixture","Positive",0.325274279236475,0.0920651194484699,0.000433697096615475
+"gWQS",1123,"nwqs","Overall mixture","Negative",-0.368664080255246,0.0871691598244693,2.60828642814029e-05
+"groupWQS",1123,"GWQS1","Aromatic hydrocarbons","Combined",-0.0647290284132433,0.0493991857847915,0.190452546065166
+"groupWQS",1123,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.153711711154637,0.0526940807337603,0.00362996666221362
+"groupWQS",1123,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.140151695064512,0.0620158302284565,0.0240869449198887
+"groupWQS",1123,"GWQS4","Reactive aldehydes","Combined",0.0837054189723322,0.0475452582459983,0.0786887173856945
+"SGL-WQS (unweighted, lambda=0)",1123,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",1123,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",1123,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",1123,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",1123,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",1123,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",1123,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",1123,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",1123,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0591072780722319,0.0270828136428707,0.0291873244767556
+"SGL-WQS (unweighted, lambda.min path)",1123,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0495063836540563,0.0277682886817876,0.0747590456940757
+"SGL-WQS (unweighted, lambda.min path)",1123,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.202771844931143,0.0380467734082049,1.09173538829131e-07
+"SGL-WQS (unweighted, lambda.min path)",1123,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0622776995189991,0.0257930611319689,0.0158424537389627
+"SGL-WQS (unweighted, lambda.min path)",1123,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.0976014957731011,0.0247644601918313,8.37688252418094e-05
+"SGL-WQS (unweighted, lambda.min path)",1123,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.144745288663037,0.0316657409218605,5.13940905619395e-06
+"SGL-WQS (unweighted, lambda.min path)",1123,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0424743623913275,0.0214291542557109,0.0476020065374915
+"SGL-WQS (unweighted, lambda.min path)",1123,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0442941649621528,0.02544101807872,0.0818228315468452
+"SGL-WQS (survey, lambda.min path)",1123,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0679349138637465,0.0469791838684589,0.191403371969667
+"SGL-WQS (survey, lambda.min path)",1123,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0697999802699881,0.0335404810443259,0.0759653996736148
+"SGL-WQS (survey, lambda.min path)",1123,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.169849804854038,0.043192237158554,0.00565811850478054
+"SGL-WQS (survey, lambda.min path)",1123,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0715179881863518,0.0287590221455325,0.0417917894605657
+"SGL-WQS (survey, lambda.min path)",1123,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.113630147898573,0.0328399393297496,0.0105458431379131
+"SGL-WQS (survey, lambda.min path)",1123,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.169308832192932,0.0327303731923147,0.00129104238259471
+"SGL-WQS (survey, lambda.min path)",1123,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0684863171611347,0.0286943080336806,0.048399015041398
+"gWQS",1234,"pwqs","Overall mixture","Positive",0.186666903356769,0.0954253785164463,0.0507822660556358
+"gWQS",1234,"nwqs","Overall mixture","Negative",-0.17914436331148,0.0839940902523937,0.0332325931577064
+"groupWQS",1234,"GWQS1","Aromatic hydrocarbons","Combined",-0.0612642839773241,0.0564997672017919,0.278538063066079
+"groupWQS",1234,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.103271621414351,0.0500469216563428,0.0393797335131218
+"groupWQS",1234,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.141303022200678,0.0579723361034166,0.015003990707535
+"groupWQS",1234,"GWQS4","Reactive aldehydes","Combined",0.0430766638425029,0.0501271932840869,0.390400130244489
+"SGL-WQS (unweighted, lambda=0)",1234,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",1234,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",1234,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",1234,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",1234,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",1234,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",1234,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",1234,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",1234,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0607318752773225,0.0277224418501216,0.0285838269104537
+"SGL-WQS (unweighted, lambda.min path)",1234,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0495557649366999,0.0277767921128832,0.074558592600155
+"SGL-WQS (unweighted, lambda.min path)",1234,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.203132440463563,0.038099532817237,1.07944408635425e-07
+"SGL-WQS (unweighted, lambda.min path)",1234,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0627314268181235,0.0258573959995108,0.0153489594387435
+"SGL-WQS (unweighted, lambda.min path)",1234,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.0985172696512561,0.0248756183596197,7.73563179518198e-05
+"SGL-WQS (unweighted, lambda.min path)",1234,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.146272519252189,0.0319183922169586,4.86349137744154e-06
+"SGL-WQS (unweighted, lambda.min path)",1234,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0425119378877179,0.0214293170097784,0.0474076528083324
+"SGL-WQS (unweighted, lambda.min path)",1234,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0444322855770455,0.0254535594416536,0.0810250734962801
+"SGL-WQS (survey, lambda.min path)",1234,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0710474690950158,0.044760237013899,0.156468901576321
+"SGL-WQS (survey, lambda.min path)",1234,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0708146510856851,0.0336813056438985,0.0735999553312354
+"SGL-WQS (survey, lambda.min path)",1234,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.170797968833926,0.0432130141308916,0.00551457344316381
+"SGL-WQS (survey, lambda.min path)",1234,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0751913788042394,0.0286045901159343,0.0339793467765964
+"SGL-WQS (survey, lambda.min path)",1234,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.11552760595841,0.0331917891096718,0.0102578396073976
+"SGL-WQS (survey, lambda.min path)",1234,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.178773059966551,0.032695866923091,0.000938095497449804
+"SGL-WQS (survey, lambda.min path)",1234,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.06516484801346,0.0267330517067787,0.0449159394016303
+"gWQS",1357,"pwqs","Overall mixture","Positive",0.226421267148793,0.094090860660442,0.0163350625158894
+"gWQS",1357,"nwqs","Overall mixture","Negative",-0.149008832712307,0.0834016293463534,0.0743725631291383
+"groupWQS",1357,"GWQS1","Aromatic hydrocarbons","Combined",-0.0624500481517125,0.0454374286159887,0.169687256015689
+"groupWQS",1357,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.0834859780782792,0.0495084150712737,0.0921186644189657
+"groupWQS",1357,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.08477354857537,0.052248414809517,0.105078678629651
+"groupWQS",1357,"GWQS4","Reactive aldehydes","Combined",0.0634521807055775,0.0472155941900392,0.179358307183405
+"SGL-WQS (unweighted, lambda=0)",1357,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",1357,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",1357,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",1357,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",1357,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",1357,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",1357,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",1357,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",1357,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.058681850107754,0.026920322751856,0.0293820633337582
+"SGL-WQS (unweighted, lambda.min path)",1357,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0495148417240797,0.0277657445754973,0.0746828511100718
+"SGL-WQS (unweighted, lambda.min path)",1357,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.202726126585182,0.0380420234858365,1.09492004197144e-07
+"SGL-WQS (unweighted, lambda.min path)",1357,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.062176941686601,0.0257785705197453,0.0159534271137537
+"SGL-WQS (unweighted, lambda.min path)",1357,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.0973437846170117,0.0247296864660459,8.5476518585882e-05
+"SGL-WQS (unweighted, lambda.min path)",1357,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.144408883578581,0.0316093597551123,5.20019713298427e-06
+"SGL-WQS (unweighted, lambda.min path)",1357,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.042477404108989,0.0214292245068403,0.0475868398087884
+"SGL-WQS (unweighted, lambda.min path)",1357,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0442561545727326,0.0254377774297664,0.0820461583521527
+"SGL-WQS (survey, lambda.min path)",1357,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0710474690950158,0.044760237013899,0.156468901576321
+"SGL-WQS (survey, lambda.min path)",1357,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0708146510856851,0.0336813056438985,0.0735999553312354
+"SGL-WQS (survey, lambda.min path)",1357,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.170797968833926,0.0432130141308916,0.00551457344316381
+"SGL-WQS (survey, lambda.min path)",1357,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0751913788042394,0.0286045901159343,0.0339793467765964
+"SGL-WQS (survey, lambda.min path)",1357,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.11552760595841,0.0331917891096718,0.0102578396073976
+"SGL-WQS (survey, lambda.min path)",1357,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.178773059966551,0.032695866923091,0.000938095497449804
+"SGL-WQS (survey, lambda.min path)",1357,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.06516484801346,0.0267330517067787,0.0449159394016303
+"gWQS",1500,"pwqs","Overall mixture","Positive",0.243903347981941,0.0910810693090895,0.00755738439746606
+"gWQS",1500,"nwqs","Overall mixture","Negative",-0.248877045722828,0.0858636069780373,0.00384932896956687
+"groupWQS",1500,"GWQS1","Aromatic hydrocarbons","Combined",-0.0637536816664416,0.0493587284738764,0.196845973500031
+"groupWQS",1500,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.0879973632243649,0.0476514510651164,0.0651525202679802
+"groupWQS",1500,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.08153794421655,0.053446784158411,0.127497287509001
+"groupWQS",1500,"GWQS4","Reactive aldehydes","Combined",0.0537351316602797,0.0436037334250658,0.218170990805195
+"SGL-WQS (unweighted, lambda=0)",1500,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",1500,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",1500,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",1500,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",1500,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",1500,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",1500,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",1500,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",1500,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0593131951386415,0.0271622675461981,0.029099061281358
+"SGL-WQS (unweighted, lambda.min path)",1500,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0495054223105911,0.027769468399504,0.0747770230443633
+"SGL-WQS (unweighted, lambda.min path)",1500,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.202799771162021,0.0380502279936921,1.09025365522573e-07
+"SGL-WQS (unweighted, lambda.min path)",1500,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0623278472338053,0.0258003374854413,0.0157877817729288
+"SGL-WQS (unweighted, lambda.min path)",1500,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.0977219430571697,0.0247800744653008,8.29485398792618e-05
+"SGL-WQS (unweighted, lambda.min path)",1500,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.144915874376612,0.0316941606765338,5.10833389912365e-06
+"SGL-WQS (unweighted, lambda.min path)",1500,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.042474641312412,0.0214291356039771,0.0476003556646173
+"SGL-WQS (unweighted, lambda.min path)",1500,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0443122406519417,0.025442584351345,0.0817171246037816
+"SGL-WQS (survey, lambda.min path)",1500,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0710474690950158,0.044760237013899,0.156468901576321
+"SGL-WQS (survey, lambda.min path)",1500,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0708146510856851,0.0336813056438985,0.0735999553312354
+"SGL-WQS (survey, lambda.min path)",1500,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.170797968833926,0.0432130141308916,0.00551457344316381
+"SGL-WQS (survey, lambda.min path)",1500,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0751913788042394,0.0286045901159343,0.0339793467765964
+"SGL-WQS (survey, lambda.min path)",1500,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.11552760595841,0.0331917891096718,0.0102578396073976
+"SGL-WQS (survey, lambda.min path)",1500,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.178773059966551,0.032695866923091,0.000938095497449804
+"SGL-WQS (survey, lambda.min path)",1500,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.06516484801346,0.0267330517067787,0.0449159394016303
+"gWQS",1618,"pwqs","Overall mixture","Positive",0.367689933311555,0.0865259049098111,2.38196942529907e-05
+"gWQS",1618,"nwqs","Overall mixture","Negative",-0.322280053998371,0.0794000504913026,5.38868359222415e-05
+"groupWQS",1618,"GWQS1","Aromatic hydrocarbons","Combined",-0.0537189303943345,0.0467095361441451,0.250453027758826
+"groupWQS",1618,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.080788841815262,0.0487955209257207,0.0981730979538516
+"groupWQS",1618,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.0931460406962656,0.0517470278181761,0.0722238389141397
+"groupWQS",1618,"GWQS4","Reactive aldehydes","Combined",0.0716252499832465,0.0465845477062165,0.124548753619338
+"SGL-WQS (unweighted, lambda=0)",1618,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",1618,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",1618,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",1618,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",1618,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",1618,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",1618,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",1618,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",1618,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0576942419892064,0.0265526448521167,0.0299066076863594
+"SGL-WQS (unweighted, lambda.min path)",1618,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.049566992688834,0.0277592729679536,0.074310198516759
+"SGL-WQS (unweighted, lambda.min path)",1618,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.202666622155268,0.0380414791513335,1.1038022784863e-07
+"SGL-WQS (unweighted, lambda.min path)",1618,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0619407033208809,0.025746671701314,0.016225390422374
+"SGL-WQS (unweighted, lambda.min path)",1618,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.0966744702578101,0.0246301493029376,8.95464833946747e-05
+"SGL-WQS (unweighted, lambda.min path)",1618,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.143692080601562,0.0314866702910896,5.32347302395443e-06
+"SGL-WQS (unweighted, lambda.min path)",1618,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0425018956295511,0.0214295483755283,0.0474623710197954
+"SGL-WQS (unweighted, lambda.min path)",1618,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0441667080907334,0.0254303025316769,0.0825756935288962
+"SGL-WQS (survey, lambda.min path)",1618,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0721493639263768,0.0436367220677216,0.142225381814881
+"SGL-WQS (survey, lambda.min path)",1618,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0711618736023886,0.0337069975356688,0.0726606437433264
+"SGL-WQS (survey, lambda.min path)",1618,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.171141289972604,0.0432341227858124,0.0054723172773269
+"SGL-WQS (survey, lambda.min path)",1618,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0768905566893277,0.0285017669317926,0.0307390829372144
+"SGL-WQS (survey, lambda.min path)",1618,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.116288200271035,0.0333489821508971,0.0101696058702015
+"SGL-WQS (survey, lambda.min path)",1618,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.182505024978328,0.0326506029182617,0.000824852379007465
+"SGL-WQS (survey, lambda.min path)",1618,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0641662440807972,0.0261994542546993,0.0441626457309312
+"gWQS",1729,"pwqs","Overall mixture","Positive",0.250078847369792,0.0848838668586257,0.00331048170422058
+"gWQS",1729,"nwqs","Overall mixture","Negative",-0.234948919119757,0.0807786321540556,0.00373085189566182
+"groupWQS",1729,"GWQS1","Aromatic hydrocarbons","Combined",0.000828657812275548,0.0441259999661936,0.985021691674308
+"groupWQS",1729,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.161517082565061,0.0599953362515621,0.00724383017299542
+"groupWQS",1729,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.144272020107913,0.058540454006967,0.0139251139611067
+"groupWQS",1729,"GWQS4","Reactive aldehydes","Combined",0.0593198948793163,0.048009722088298,0.216968254211953
+"SGL-WQS (unweighted, lambda=0)",1729,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",1729,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",1729,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",1729,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",1729,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",1729,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",1729,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",1729,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",1729,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0563048383112347,0.0260569362653812,0.030822173122099
+"SGL-WQS (unweighted, lambda.min path)",1729,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.049690806769459,0.0277496300699891,0.0734901626216341
+"SGL-WQS (unweighted, lambda.min path)",1729,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.202736586150033,0.0380756051419421,1.12154220334561e-07
+"SGL-WQS (unweighted, lambda.min path)",1729,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0613746003511474,0.0256946600620803,0.0170012180463188
+"SGL-WQS (unweighted, lambda.min path)",1729,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.0955144902570479,0.0244238475727526,9.49918102330337e-05
+"SGL-WQS (unweighted, lambda.min path)",1729,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.142601426096596,0.0312847166006141,5.46083298030277e-06
+"SGL-WQS (unweighted, lambda.min path)",1729,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0425818724791581,0.0214305956736723,0.0470577456433052
+"SGL-WQS (unweighted, lambda.min path)",1729,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0440352120229151,0.0254182480668287,0.0833468450725696
+"SGL-WQS (survey, lambda.min path)",1729,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.07027680415953,0.0454508762119686,0.165972809030515
+"SGL-WQS (survey, lambda.min path)",1729,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0705446816155162,0.0336439748183877,0.0742210796551845
+"SGL-WQS (survey, lambda.min path)",1729,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.170555536941386,0.0432072020043439,0.00555055596250636
+"SGL-WQS (survey, lambda.min path)",1729,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0740767562334228,0.0286530298611588,0.0361915884506879
+"SGL-WQS (survey, lambda.min path)",1729,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.114998796713884,0.0330929049199542,0.0103354193259645
+"SGL-WQS (survey, lambda.min path)",1729,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.176061742776812,0.0327156034407897,0.00102861915828132
+"SGL-WQS (survey, lambda.min path)",1729,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0661478225950416,0.0273252752858501,0.0460410475770136
+"gWQS",1847,"pwqs","Overall mixture","Positive",0.417509924086514,0.0895118362633493,3.60228254179678e-06
+"gWQS",1847,"nwqs","Overall mixture","Negative",-0.337906198257188,0.0814231185139174,3.66391479648674e-05
+"groupWQS",1847,"GWQS1","Aromatic hydrocarbons","Combined",-0.0338958664080922,0.0521275794157303,0.515714021663847
+"groupWQS",1847,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.180064590813312,0.0540985896638092,0.000912237972308845
+"groupWQS",1847,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.218170894284272,0.0546317399789679,7.09558089313516e-05
+"groupWQS",1847,"GWQS4","Reactive aldehydes","Combined",0.0776772485662365,0.0515468149291232,0.132214692880976
+"SGL-WQS (unweighted, lambda=0)",1847,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",1847,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",1847,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",1847,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",1847,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",1847,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",1847,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",1847,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",1847,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0607318752773225,0.0277224418501216,0.0285838269104537
+"SGL-WQS (unweighted, lambda.min path)",1847,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0495557649366999,0.0277767921128832,0.074558592600155
+"SGL-WQS (unweighted, lambda.min path)",1847,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.203132440463563,0.038099532817237,1.07944408635425e-07
+"SGL-WQS (unweighted, lambda.min path)",1847,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0627314268181235,0.0258573959995108,0.0153489594387435
+"SGL-WQS (unweighted, lambda.min path)",1847,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.0985172696512561,0.0248756183596197,7.73563179518198e-05
+"SGL-WQS (unweighted, lambda.min path)",1847,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.146272519252189,0.0319183922169586,4.86349137744154e-06
+"SGL-WQS (unweighted, lambda.min path)",1847,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0425119378877179,0.0214293170097784,0.0474076528083324
+"SGL-WQS (unweighted, lambda.min path)",1847,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0444322855770455,0.0254535594416536,0.0810250734962801
+"SGL-WQS (survey, lambda.min path)",1847,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0716293806233362,0.0441414346994245,0.148678020947898
+"SGL-WQS (survey, lambda.min path)",1847,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0710318948902437,0.0337067447340334,0.073073852155396
+"SGL-WQS (survey, lambda.min path)",1847,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.170984925688399,0.0432201320679614,0.0054886994170275
+"SGL-WQS (survey, lambda.min path)",1847,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0761239543611646,0.028557355792149,0.0322020943528717
+"SGL-WQS (survey, lambda.min path)",1847,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.115962776322066,0.0332744893963833,0.0101967215877627
+"SGL-WQS (survey, lambda.min path)",1847,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.180965260230705,0.0326607358408688,0.000868326171946143
+"SGL-WQS (survey, lambda.min path)",1847,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0643653055873419,0.0262541886012986,0.0440025823850941
+"gWQS",1963,"pwqs","Overall mixture","Positive",0.17800271581544,0.0902815765639974,0.0489805275433143
+"gWQS",1963,"nwqs","Overall mixture","Negative",-0.15934761403018,0.087047342423299,0.0675186850224147
+"groupWQS",1963,"GWQS1","Aromatic hydrocarbons","Combined",-0.0375011644573097,0.0467194298426666,0.422387192462895
+"groupWQS",1963,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.0771460263033472,0.0571899684883629,0.177727552401968
+"groupWQS",1963,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.128252100541591,0.0565352865096874,0.0235560018446746
+"groupWQS",1963,"GWQS4","Reactive aldehydes","Combined",0.0521207318238007,0.049479337255989,0.2924754214521
+"SGL-WQS (unweighted, lambda=0)",1963,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",1963,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",1963,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",1963,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",1963,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",1963,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",1963,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",1963,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",1963,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0593131951386415,0.0271622675461981,0.029099061281358
+"SGL-WQS (unweighted, lambda.min path)",1963,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0495054223105911,0.027769468399504,0.0747770230443633
+"SGL-WQS (unweighted, lambda.min path)",1963,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.202799771162021,0.0380502279936921,1.09025365522573e-07
+"SGL-WQS (unweighted, lambda.min path)",1963,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0623278472338053,0.0258003374854413,0.0157877817729288
+"SGL-WQS (unweighted, lambda.min path)",1963,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.0977219430571697,0.0247800744653008,8.29485398792618e-05
+"SGL-WQS (unweighted, lambda.min path)",1963,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.144915874376612,0.0316941606765338,5.10833389912365e-06
+"SGL-WQS (unweighted, lambda.min path)",1963,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.042474641312412,0.0214291356039771,0.0476003556646173
+"SGL-WQS (unweighted, lambda.min path)",1963,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0443122406519417,0.025442584351345,0.0817171246037816
+"SGL-WQS (survey, lambda.min path)",1963,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0710474690950158,0.044760237013899,0.156468901576321
+"SGL-WQS (survey, lambda.min path)",1963,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0708146510856851,0.0336813056438985,0.0735999553312354
+"SGL-WQS (survey, lambda.min path)",1963,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.170797968833926,0.0432130141308916,0.00551457344316381
+"SGL-WQS (survey, lambda.min path)",1963,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0751913788042394,0.0286045901159343,0.0339793467765964
+"SGL-WQS (survey, lambda.min path)",1963,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.11552760595841,0.0331917891096718,0.0102578396073976
+"SGL-WQS (survey, lambda.min path)",1963,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.178773059966551,0.032695866923091,0.000938095497449804
+"SGL-WQS (survey, lambda.min path)",1963,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.06516484801346,0.0267330517067787,0.0449159394016303
+"gWQS",2048,"pwqs","Overall mixture","Positive",0.349307983768278,0.0967320661251877,0.000323332748928553
+"gWQS",2048,"nwqs","Overall mixture","Negative",-0.337868871029536,0.0874432971177197,0.000120362011796813
+"groupWQS",2048,"GWQS1","Aromatic hydrocarbons","Combined",-0.051906398875454,0.0448751358569148,0.247737914118468
+"groupWQS",2048,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.142412168902883,0.055525456474421,0.0105001764805031
+"groupWQS",2048,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.183164161794597,0.0608995208336153,0.00271324362176434
+"groupWQS",2048,"GWQS4","Reactive aldehydes","Combined",0.0394450505022253,0.0441002666461359,0.371348874326115
+"SGL-WQS (unweighted, lambda=0)",2048,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",2048,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",2048,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",2048,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",2048,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",2048,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",2048,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",2048,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",2048,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0574697399549566,0.0264704529844923,0.030037636851241
+"SGL-WQS (unweighted, lambda.min path)",2048,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0495827414193251,0.0277577733556961,0.0742026660540606
+"SGL-WQS (unweighted, lambda.min path)",2048,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.202661208470131,0.0380429455994094,1.10588768831539e-07
+"SGL-WQS (unweighted, lambda.min path)",2048,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0618858955370511,0.025739674734469,0.0162908389692326
+"SGL-WQS (unweighted, lambda.min path)",2048,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.0965126653398983,0.024604939493296,9.04944224592286e-05
+"SGL-WQS (unweighted, lambda.min path)",2048,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.143538956540091,0.0314599754200892,5.34851665944565e-06
+"SGL-WQS (unweighted, lambda.min path)",2048,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0425095706966989,0.0214296514192042,0.0474234386429877
+"SGL-WQS (unweighted, lambda.min path)",2048,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0441476747625503,0.0254287213561033,0.0826888842682286
+"SGL-WQS (survey, lambda.min path)",2048,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0692529529255589,0.0461985107589419,0.177543595094598
+"SGL-WQS (survey, lambda.min path)",2048,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0702164516136599,0.0335940259626459,0.0749537596833152
+"SGL-WQS (survey, lambda.min path)",2048,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.170239288023872,0.0432020991238142,0.00559951803963106
+"SGL-WQS (survey, lambda.min path)",2048,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0727423390731086,0.0287016312147354,0.0389797219733802
+"SGL-WQS (survey, lambda.min path)",2048,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.114370527198046,0.0329742854701771,0.0104273417714745
+"SGL-WQS (survey, lambda.min path)",2048,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.17274655683651,0.032700712069518,0.00114474256759436
+"SGL-WQS (survey, lambda.min path)",2048,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0672659259312194,0.0279873049986559,0.0472265821141823
+"gWQS",2222,"pwqs","Overall mixture","Positive",0.272710845116726,0.0845567915477148,0.00130987132847799
+"gWQS",2222,"nwqs","Overall mixture","Negative",-0.192509075137167,0.0773105530891189,0.012972804290019
+"groupWQS",2222,"GWQS1","Aromatic hydrocarbons","Combined",-0.0661671343425559,0.0478480031342878,0.167083953938428
+"groupWQS",2222,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.149188241165439,0.0496305102581782,0.00272799699557144
+"groupWQS",2222,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.146167711538755,0.0587306660081045,0.0130155845945215
+"groupWQS",2222,"GWQS4","Reactive aldehydes","Combined",0.0771305450595753,0.0475669358341456,0.105291449516583
+"SGL-WQS (unweighted, lambda=0)",2222,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",2222,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",2222,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",2222,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",2222,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",2222,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",2222,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",2222,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",2222,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0576942419892064,0.0265526448521167,0.0299066076863594
+"SGL-WQS (unweighted, lambda.min path)",2222,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.049566992688834,0.0277592729679536,0.074310198516759
+"SGL-WQS (unweighted, lambda.min path)",2222,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.202666622155268,0.0380414791513335,1.1038022784863e-07
+"SGL-WQS (unweighted, lambda.min path)",2222,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0619407033208809,0.025746671701314,0.016225390422374
+"SGL-WQS (unweighted, lambda.min path)",2222,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.0966744702578101,0.0246301493029376,8.95464833946747e-05
+"SGL-WQS (unweighted, lambda.min path)",2222,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.143692080601562,0.0314866702910896,5.32347302395443e-06
+"SGL-WQS (unweighted, lambda.min path)",2222,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0425018956295511,0.0214295483755283,0.0474623710197954
+"SGL-WQS (unweighted, lambda.min path)",2222,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0441667080907334,0.0254303025316769,0.0825756935288962
+"SGL-WQS (survey, lambda.min path)",2222,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0679349138637465,0.0469791838684589,0.191403371969667
+"SGL-WQS (survey, lambda.min path)",2222,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0697999802699881,0.0335404810443259,0.0759653996736148
+"SGL-WQS (survey, lambda.min path)",2222,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.169849804854038,0.043192237158554,0.00565811850478054
+"SGL-WQS (survey, lambda.min path)",2222,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0715179881863518,0.0287590221455325,0.0417917894605657
+"SGL-WQS (survey, lambda.min path)",2222,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.113630147898573,0.0328399393297496,0.0105458431379131
+"SGL-WQS (survey, lambda.min path)",2222,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.169308832192932,0.0327303731923147,0.00129104238259471
+"SGL-WQS (survey, lambda.min path)",2222,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0684863171611347,0.0286943080336806,0.048399015041398
+"gWQS",2345,"pwqs","Overall mixture","Positive",0.209132963443324,0.0836077789994523,0.0125629340162949
+"gWQS",2345,"nwqs","Overall mixture","Negative",-0.164911275112064,0.0753641813156622,0.0289330859389146
+"groupWQS",2345,"GWQS1","Aromatic hydrocarbons","Combined",-0.0431027799684651,0.0508470980810897,0.39685576366581
+"groupWQS",2345,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.0945830356720828,0.0450783157838807,0.0361934750527975
+"groupWQS",2345,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.115380470036217,0.0613546502953171,0.0603874013216912
+"groupWQS",2345,"GWQS4","Reactive aldehydes","Combined",0.0393075095122958,0.0519744963154389,0.4496958119536
+"SGL-WQS (unweighted, lambda=0)",2345,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",2345,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",2345,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",2345,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",2345,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",2345,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",2345,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",2345,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",2345,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0563029368230207,0.0260716088397993,0.030922055978175
+"SGL-WQS (unweighted, lambda.min path)",2345,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0497268513822606,0.0277485511598975,0.073270608601259
+"SGL-WQS (unweighted, lambda.min path)",2345,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.202737614358577,0.0380858536929158,1.13012970499912e-07
+"SGL-WQS (unweighted, lambda.min path)",2345,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0612195038229725,0.0256879303405555,0.0172525351898936
+"SGL-WQS (unweighted, lambda.min path)",2345,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.0952758050775752,0.0243614371131099,9.49055664471243e-05
+"SGL-WQS (unweighted, lambda.min path)",2345,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.142508169558441,0.031259818668253,5.44419991536083e-06
+"SGL-WQS (unweighted, lambda.min path)",2345,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0426090192560722,0.0214307916808475,0.0469194362073494
+"SGL-WQS (unweighted, lambda.min path)",2345,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0440219016083389,0.0254163365761916,0.0834168790512816
+"SGL-WQS (survey, lambda.min path)",2345,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.07027680415953,0.0454508762119686,0.165972809030515
+"SGL-WQS (survey, lambda.min path)",2345,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0705446816155162,0.0336439748183877,0.0742210796551845
+"SGL-WQS (survey, lambda.min path)",2345,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.170555536941386,0.0432072020043439,0.00555055596250636
+"SGL-WQS (survey, lambda.min path)",2345,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0740767562334228,0.0286530298611588,0.0361915884506879
+"SGL-WQS (survey, lambda.min path)",2345,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.114998796713884,0.0330929049199542,0.0103354193259645
+"SGL-WQS (survey, lambda.min path)",2345,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.176061742776812,0.0327156034407897,0.00102861915828132
+"SGL-WQS (survey, lambda.min path)",2345,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0661478225950416,0.0273252752858501,0.0460410475770136
+"gWQS",2500,"pwqs","Overall mixture","Positive",0.406456012338477,0.0960179258162025,2.57159518059681e-05
+"gWQS",2500,"nwqs","Overall mixture","Negative",-0.335019723789615,0.0874440250645077,0.000137468365306819
+"groupWQS",2500,"GWQS1","Aromatic hydrocarbons","Combined",-0.0951999942274037,0.0514171031793664,0.0644535558508186
+"groupWQS",2500,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.103552382664523,0.0499553828265328,0.038493686606076
+"groupWQS",2500,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.173421759045373,0.0589179419449573,0.00333740353144973
+"groupWQS",2500,"GWQS4","Reactive aldehydes","Combined",-0.0140414086031678,0.0439177459097743,0.749261572938934
+"SGL-WQS (unweighted, lambda=0)",2500,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",2500,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",2500,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",2500,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",2500,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",2500,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",2500,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",2500,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",2500,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0573586650989167,0.0264296867212304,0.0301023214179678
+"SGL-WQS (unweighted, lambda.min path)",2500,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0495899439246399,0.0277570657121283,0.0741532986815982
+"SGL-WQS (unweighted, lambda.min path)",2500,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.20266013741073,0.0380438275947418,1.10679856887352e-07
+"SGL-WQS (unweighted, lambda.min path)",2500,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0618584716593156,0.0257362365997229,0.0163239490922767
+"SGL-WQS (unweighted, lambda.min path)",2500,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.0964346383879844,0.0245928515544566,9.09597495716224e-05
+"SGL-WQS (unweighted, lambda.min path)",2500,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.14346341070401,0.0314467892758122,5.36087135403374e-06
+"SGL-WQS (unweighted, lambda.min path)",2500,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.042513255843838,0.0214297038080438,0.0474047852253038
+"SGL-WQS (unweighted, lambda.min path)",2500,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0441386960658535,0.0254279673729817,0.082742231260973
+"SGL-WQS (survey, lambda.min path)",2500,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0710474690950158,0.044760237013899,0.156468901576321
+"SGL-WQS (survey, lambda.min path)",2500,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0708146510856851,0.0336813056438985,0.0735999553312354
+"SGL-WQS (survey, lambda.min path)",2500,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.170797968833926,0.0432130141308916,0.00551457344316381
+"SGL-WQS (survey, lambda.min path)",2500,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0751913788042394,0.0286045901159343,0.0339793467765964
+"SGL-WQS (survey, lambda.min path)",2500,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.11552760595841,0.0331917891096718,0.0102578396073976
+"SGL-WQS (survey, lambda.min path)",2500,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.178773059966551,0.032695866923091,0.000938095497449804
+"SGL-WQS (survey, lambda.min path)",2500,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.06516484801346,0.0267330517067787,0.0449159394016303
+"gWQS",2718,"pwqs","Overall mixture","Positive",0.25489924565546,0.0853809980152181,0.00291413758232128
+"gWQS",2718,"nwqs","Overall mixture","Negative",-0.212895368017741,0.0765352521400888,0.00552955103206668
+"groupWQS",2718,"GWQS1","Aromatic hydrocarbons","Combined",-0.0940474242785364,0.0503551503727318,0.0621628888636616
+"groupWQS",2718,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.113478101533358,0.0503593629442077,0.0244995005843891
+"groupWQS",2718,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.108569724235165,0.054935205754285,0.0484529237695968
+"groupWQS",2718,"GWQS4","Reactive aldehydes","Combined",0.0548253090554155,0.0514329769095686,0.286757119794854
+"SGL-WQS (unweighted, lambda=0)",2718,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",2718,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",2718,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",2718,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",2718,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",2718,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",2718,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",2718,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",2718,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0598022587206707,0.027352925332658,0.0289038075545004
+"SGL-WQS (unweighted, lambda.min path)",2718,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0495113397177406,0.0277721465438629,0.0747703182492218
+"SGL-WQS (unweighted, lambda.min path)",2718,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.202884257021839,0.0380618284050234,1.08673406339491e-07
+"SGL-WQS (unweighted, lambda.min path)",2718,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0624533987317203,0.0258184909261154,0.0156515080877307
+"SGL-WQS (unweighted, lambda.min path)",2718,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.098000754190283,0.0248148979384482,8.10120484144565e-05
+"SGL-WQS (unweighted, lambda.min path)",2718,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.145344773877452,0.0317652946975211,5.03013698130958e-06
+"SGL-WQS (unweighted, lambda.min path)",2718,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0424801378618642,0.0214291339016468,0.0475716202615215
+"SGL-WQS (unweighted, lambda.min path)",2718,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0443543797470062,0.0254463151079013,0.0814721251652619
+"SGL-WQS (survey, lambda.min path)",2718,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0710474690950158,0.044760237013899,0.156468901576321
+"SGL-WQS (survey, lambda.min path)",2718,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0708146510856851,0.0336813056438985,0.0735999553312354
+"SGL-WQS (survey, lambda.min path)",2718,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.170797968833926,0.0432130141308916,0.00551457344316381
+"SGL-WQS (survey, lambda.min path)",2718,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0751913788042394,0.0286045901159343,0.0339793467765964
+"SGL-WQS (survey, lambda.min path)",2718,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.11552760595841,0.0331917891096718,0.0102578396073976
+"SGL-WQS (survey, lambda.min path)",2718,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.178773059966551,0.032695866923091,0.000938095497449804
+"SGL-WQS (survey, lambda.min path)",2718,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.06516484801346,0.0267330517067787,0.0449159394016303
+"gWQS",2801,"pwqs","Overall mixture","Positive",0.392310612634358,0.0857766688694263,5.5570602760014e-06
+"gWQS",2801,"nwqs","Overall mixture","Negative",-0.276164484545883,0.079731672525454,0.000561322214621403
+"groupWQS",2801,"GWQS1","Aromatic hydrocarbons","Combined",-0.0700240067561393,0.0559928067836321,0.211441075657927
+"groupWQS",2801,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.189417960127848,0.0584084566058579,0.00123065834006969
+"groupWQS",2801,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.20299721727983,0.0596815849141391,0.000703018320065755
+"groupWQS",2801,"GWQS4","Reactive aldehydes","Combined",0.0570790163249553,0.0534859339398177,0.286205513676791
+"SGL-WQS (unweighted, lambda=0)",2801,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",2801,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",2801,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",2801,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",2801,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",2801,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",2801,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",2801,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",2801,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0581357638061482,0.026715363155816,0.0296592288669238
+"SGL-WQS (unweighted, lambda.min path)",2801,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0495385232644403,0.0277622509838479,0.0745076706790603
+"SGL-WQS (unweighted, lambda.min path)",2801,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.20268641004922,0.0380401125854216,1.09954590252496e-07
+"SGL-WQS (unweighted, lambda.min path)",2801,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0620480665966203,0.0257607227526088,0.0160993721469358
+"SGL-WQS (unweighted, lambda.min path)",2801,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.0969873798219352,0.0246781948699706,8.77044573711928e-05
+"SGL-WQS (unweighted, lambda.min path)",2801,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.144003141794831,0.0315404408946961,5.27142259642561e-06
+"SGL-WQS (unweighted, lambda.min path)",2801,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0424882252426493,0.0214293757245506,0.047531895305837
+"SGL-WQS (unweighted, lambda.min path)",2801,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0442063812940908,0.0254336047653587,0.0823402844155222
+"SGL-WQS (survey, lambda.min path)",2801,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0692529529255589,0.0461985107589419,0.177543595094598
+"SGL-WQS (survey, lambda.min path)",2801,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0702164516136599,0.0335940259626459,0.0749537596833152
+"SGL-WQS (survey, lambda.min path)",2801,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.170239288023872,0.0432020991238142,0.00559951803963106
+"SGL-WQS (survey, lambda.min path)",2801,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0727423390731086,0.0287016312147354,0.0389797219733802
+"SGL-WQS (survey, lambda.min path)",2801,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.114370527198046,0.0329742854701771,0.0104273417714745
+"SGL-WQS (survey, lambda.min path)",2801,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.17274655683651,0.032700712069518,0.00114474256759436
+"SGL-WQS (survey, lambda.min path)",2801,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0672659259312194,0.0279873049986559,0.0472265821141823
+"gWQS",3001,"pwqs","Overall mixture","Positive",0.352213516074574,0.0922200383132525,0.000143868161401749
+"gWQS",3001,"nwqs","Overall mixture","Negative",-0.324134027469584,0.0851026306706548,0.000150022972551093
+"groupWQS",3001,"GWQS1","Aromatic hydrocarbons","Combined",-0.0531732765577585,0.0459771109292458,0.247806866643911
+"groupWQS",3001,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.13148937318231,0.0496793176131526,0.00828249804054338
+"groupWQS",3001,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.152999784406623,0.0567498652883452,0.00716079588113752
+"groupWQS",3001,"GWQS4","Reactive aldehydes","Combined",0.0173971334174222,0.0454408476684292,0.701928494036142
+"SGL-WQS (unweighted, lambda=0)",3001,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",3001,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",3001,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",3001,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",3001,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",3001,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",3001,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",3001,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",3001,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.056331716056418,0.0260926784015971,0.030971817723476
+"SGL-WQS (unweighted, lambda.min path)",3001,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0497478777023556,0.0277481487388772,0.0731451201091093
+"SGL-WQS (unweighted, lambda.min path)",3001,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.202730724289488,0.0380911733516652,1.13581055111291e-07
+"SGL-WQS (unweighted, lambda.min path)",3001,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0611287877821632,0.0256847169217379,0.0174042533244821
+"SGL-WQS (unweighted, lambda.min path)",3001,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.0951223025653469,0.024319578018143,9.47420073446883e-05
+"SGL-WQS (unweighted, lambda.min path)",3001,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.142477366338876,0.0312486963056645,5.42788054996703e-06
+"SGL-WQS (unweighted, lambda.min path)",3001,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.042625364345705,0.0214308799314999,0.0468360212487964
+"SGL-WQS (unweighted, lambda.min path)",3001,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0440182178509071,0.0254154580101566,0.0834320292293737
+"SGL-WQS (survey, lambda.min path)",3001,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0710474690950158,0.044760237013899,0.156468901576321
+"SGL-WQS (survey, lambda.min path)",3001,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0708146510856851,0.0336813056438985,0.0735999553312354
+"SGL-WQS (survey, lambda.min path)",3001,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.170797968833926,0.0432130141308916,0.00551457344316381
+"SGL-WQS (survey, lambda.min path)",3001,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0751913788042394,0.0286045901159343,0.0339793467765964
+"SGL-WQS (survey, lambda.min path)",3001,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.11552760595841,0.0331917891096718,0.0102578396073976
+"SGL-WQS (survey, lambda.min path)",3001,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.178773059966551,0.032695866923091,0.000938095497449804
+"SGL-WQS (survey, lambda.min path)",3001,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.06516484801346,0.0267330517067787,0.0449159394016303
+"gWQS",3141,"pwqs","Overall mixture","Positive",0.208714941017195,0.0888885773673971,0.0191092268871885
+"gWQS",3141,"nwqs","Overall mixture","Negative",-0.148080648248187,0.0802948520195727,0.0655138430923102
+"groupWQS",3141,"GWQS1","Aromatic hydrocarbons","Combined",-0.0528908098363792,0.045090067489815,0.241135002301165
+"groupWQS",3141,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.103203741632467,0.0517053492808633,0.0462645276517347
+"groupWQS",3141,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.153591224419837,0.0511902472644872,0.00277790211894472
+"groupWQS",3141,"GWQS4","Reactive aldehydes","Combined",0.0124066321219577,0.0459315433020754,0.787142538649012
+"SGL-WQS (unweighted, lambda=0)",3141,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",3141,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",3141,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",3141,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",3141,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",3141,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",3141,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",3141,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",3141,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0584644661870118,0.0268382222225685,0.0294885314535631
+"SGL-WQS (unweighted, lambda.min path)",3141,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0495225528213145,0.0277643851240373,0.0746234590367552
+"SGL-WQS (unweighted, lambda.min path)",3141,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.202708084459196,0.0380407356175782,1.09666879015521e-07
+"SGL-WQS (unweighted, lambda.min path)",3141,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0621259593363616,0.0257713876712788,0.016010497407221
+"SGL-WQS (unweighted, lambda.min path)",3141,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.0972059548195839,0.0247102509014538,8.63577055038451e-05
+"SGL-WQS (unweighted, lambda.min path)",3141,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.144244254583234,0.0315815440436512,5.22947583436638e-06
+"SGL-WQS (unweighted, lambda.min path)",3141,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0424807981484882,0.0214292764982174,0.0475696479161313
+"SGL-WQS (unweighted, lambda.min path)",3141,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0442364220624374,0.0254361165426411,0.0821625703853989
+"SGL-WQS (survey, lambda.min path)",3141,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.07027680415953,0.0454508762119686,0.165972809030515
+"SGL-WQS (survey, lambda.min path)",3141,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0705446816155162,0.0336439748183877,0.0742210796551845
+"SGL-WQS (survey, lambda.min path)",3141,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.170555536941386,0.0432072020043439,0.00555055596250636
+"SGL-WQS (survey, lambda.min path)",3141,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0740767562334228,0.0286530298611588,0.0361915884506879
+"SGL-WQS (survey, lambda.min path)",3141,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.114998796713884,0.0330929049199542,0.0103354193259645
+"SGL-WQS (survey, lambda.min path)",3141,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.176061742776812,0.0327156034407897,0.00102861915828132
+"SGL-WQS (survey, lambda.min path)",3141,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0661478225950416,0.0273252752858501,0.0460410475770136
+"gWQS",3333,"pwqs","Overall mixture","Positive",0.379762788020471,0.099589367345218,0.000147337396577538
+"gWQS",3333,"nwqs","Overall mixture","Negative",-0.38766798260189,0.0888825707604112,1.45455007589437e-05
+"groupWQS",3333,"GWQS1","Aromatic hydrocarbons","Combined",-0.0240187131137478,0.0451491679286032,0.59487997570651
+"groupWQS",3333,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.187368148711027,0.0575856492024651,0.00118563669120757
+"groupWQS",3333,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.27704957582297,0.0651063884765571,2.32827484598588e-05
+"groupWQS",3333,"GWQS4","Reactive aldehydes","Combined",0.0264833031322993,0.0489341775020505,0.588514954409518
+"SGL-WQS (unweighted, lambda=0)",3333,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",3333,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",3333,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",3333,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",3333,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",3333,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",3333,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",3333,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",3333,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0583551230093101,0.0267971786419328,0.0295439890368938
+"SGL-WQS (unweighted, lambda.min path)",3333,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0495272975171543,0.0277636855364986,0.0745883609587056
+"SGL-WQS (unweighted, lambda.min path)",3333,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.202700173588851,0.0380403575768863,1.09759226593544e-07
+"SGL-WQS (unweighted, lambda.min path)",3333,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.062100214897499,0.0257678174495673,0.016039629604965
+"SGL-WQS (unweighted, lambda.min path)",3333,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.097134689150946,0.0246999632248157,8.68036294743922e-05
+"SGL-WQS (unweighted, lambda.min path)",3333,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.144163066596015,0.0315677566016576,5.24374162473182e-06
+"SGL-WQS (unweighted, lambda.min path)",3333,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.042482967525731,0.0214293067405089,0.0475586311636812
+"SGL-WQS (unweighted, lambda.min path)",3333,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0442264412933141,0.0254352802995722,0.0822215549923257
+"SGL-WQS (survey, lambda.min path)",3333,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0716293806233362,0.0441414346994245,0.148678020947898
+"SGL-WQS (survey, lambda.min path)",3333,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0710318948902437,0.0337067447340334,0.073073852155396
+"SGL-WQS (survey, lambda.min path)",3333,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.170984925688399,0.0432201320679614,0.0054886994170275
+"SGL-WQS (survey, lambda.min path)",3333,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0761239543611646,0.028557355792149,0.0322020943528717
+"SGL-WQS (survey, lambda.min path)",3333,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.115962776322066,0.0332744893963833,0.0101967215877627
+"SGL-WQS (survey, lambda.min path)",3333,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.180965260230705,0.0326607358408688,0.000868326171946143
+"SGL-WQS (survey, lambda.min path)",3333,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0643653055873419,0.0262541886012986,0.0440025823850941
+"gWQS",3500,"pwqs","Overall mixture","Positive",0.192394684230437,0.0842800936097085,0.0226879581585905
+"gWQS",3500,"nwqs","Overall mixture","Negative",-0.131722387671194,0.0785443518106781,0.0939009831116656
+"groupWQS",3500,"GWQS1","Aromatic hydrocarbons","Combined",-0.0409560336396501,0.0514285983692889,0.426049302719213
+"groupWQS",3500,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.163467930947847,0.0557722054247009,0.00347268137495532
+"groupWQS",3500,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.122043201485888,0.0625381611903473,0.0513377685991947
+"groupWQS",3500,"GWQS4","Reactive aldehydes","Combined",0.0385434959300379,0.0449523559465723,0.391457841787757
+"SGL-WQS (unweighted, lambda=0)",3500,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",3500,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",3500,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",3500,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",3500,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",3500,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",3500,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",3500,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",3500,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.056315951957652,0.0260818417248497,0.0309490897163775
+"SGL-WQS (unweighted, lambda.min path)",3500,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0497380440782867,0.0277483224394314,0.0732036372959065
+"SGL-WQS (unweighted, lambda.min path)",3500,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.202734097793764,0.0380886669566553,1.13311021307402e-07
+"SGL-WQS (unweighted, lambda.min path)",3500,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0611714262083408,0.025686173739681,0.0173325596893038
+"SGL-WQS (unweighted, lambda.min path)",3500,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.0951945898958929,0.0243394254100425,9.48275306097557e-05
+"SGL-WQS (unweighted, lambda.min path)",3500,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.142490259079018,0.0312536924256537,5.43598061759346e-06
+"SGL-WQS (unweighted, lambda.min path)",3500,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0426176438576795,0.0214308393730482,0.0468754176096199
+"SGL-WQS (unweighted, lambda.min path)",3500,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0440197245597167,0.0254158566995768,0.0834263096901973
+"SGL-WQS (survey, lambda.min path)",3500,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0692529529255589,0.0461985107589419,0.177543595094598
+"SGL-WQS (survey, lambda.min path)",3500,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0702164516136599,0.0335940259626459,0.0749537596833152
+"SGL-WQS (survey, lambda.min path)",3500,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.170239288023872,0.0432020991238142,0.00559951803963106
+"SGL-WQS (survey, lambda.min path)",3500,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0727423390731086,0.0287016312147354,0.0389797219733802
+"SGL-WQS (survey, lambda.min path)",3500,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.114370527198046,0.0329742854701771,0.0104273417714745
+"SGL-WQS (survey, lambda.min path)",3500,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.17274655683651,0.032700712069518,0.00114474256759436
+"SGL-WQS (survey, lambda.min path)",3500,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0672659259312194,0.0279873049986559,0.0472265821141823
+"gWQS",3777,"pwqs","Overall mixture","Positive",0.301599537463196,0.0931831459142684,0.00125834358261479
+"gWQS",3777,"nwqs","Overall mixture","Negative",-0.255531373384974,0.0828061609407738,0.00209799460903207
+"groupWQS",3777,"GWQS1","Aromatic hydrocarbons","Combined",-0.0339147259150548,0.0450584903838682,0.451856896889357
+"groupWQS",3777,"GWQS2","Dienes/alkenes/epoxides","Combined",-0.155751116117575,0.0465180553630535,0.000850510062345655
+"groupWQS",3777,"GWQS3","Nitrile/amide/cyanide-related","Combined",0.196365060818496,0.0554039091632492,0.000416017810148185
+"groupWQS",3777,"GWQS4","Reactive aldehydes","Combined",0.00271313982228459,0.0442598824330612,0.951135065723908
+"SGL-WQS (unweighted, lambda=0)",3777,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0637222423744336,0.0289664414565545,0.0279266820155842
+"SGL-WQS (unweighted, lambda=0)",3777,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0505287198551155,0.0277881372642165,0.0691542341309376
+"SGL-WQS (unweighted, lambda=0)",3777,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.206160106822262,0.0386033384153154,1.02874290379591e-07
+"SGL-WQS (unweighted, lambda=0)",3777,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.065239425892528,0.0261246118499283,0.0125935493530599
+"SGL-WQS (unweighted, lambda=0)",3777,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.100495925217755,0.0250573059598072,6.2702683168774e-05
+"SGL-WQS (unweighted, lambda=0)",3777,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.152499830773159,0.032974506827608,3.98155317372046e-06
+"SGL-WQS (unweighted, lambda=0)",3777,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0430806801604577,0.0214346920559355,0.0445757933032246
+"SGL-WQS (unweighted, lambda=0)",3777,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0445682640978355,0.0254779158175302,0.0803890923675073
+"SGL-WQS (unweighted, lambda.min path)",3777,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0591072780722319,0.0270828136428707,0.0291873244767556
+"SGL-WQS (unweighted, lambda.min path)",3777,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0495063836540563,0.0277682886817876,0.0747590456940757
+"SGL-WQS (unweighted, lambda.min path)",3777,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.202771844931143,0.0380467734082049,1.09173538829131e-07
+"SGL-WQS (unweighted, lambda.min path)",3777,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0622776995189991,0.0257930611319689,0.0158424537389627
+"SGL-WQS (unweighted, lambda.min path)",3777,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.0976014957731011,0.0247644601918313,8.37688252418094e-05
+"SGL-WQS (unweighted, lambda.min path)",3777,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.144745288663037,0.0316657409218605,5.13940905619395e-06
+"SGL-WQS (unweighted, lambda.min path)",3777,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0424743623913275,0.0214291542557109,0.0476020065374915
+"SGL-WQS (unweighted, lambda.min path)",3777,"Reactive_aldehydes_neg","Reactive aldehydes","Negative",-0.0442941649621528,0.02544101807872,0.0818228315468452
+"SGL-WQS (survey, lambda.min path)",3777,"Aromatic_hydrocarbons_pos","Aromatic hydrocarbons","Positive",0.0692529529255589,0.0461985107589419,0.177543595094598
+"SGL-WQS (survey, lambda.min path)",3777,"Dienes_alkenes_epoxides_pos","Dienes/alkenes/epoxides","Positive",0.0702164516136599,0.0335940259626459,0.0749537596833152
+"SGL-WQS (survey, lambda.min path)",3777,"Nitrile_amide_cyanide_related_pos","Nitrile/amide/cyanide-related","Positive",0.170239288023872,0.0432020991238142,0.00559951803963106
+"SGL-WQS (survey, lambda.min path)",3777,"Reactive_aldehydes_pos","Reactive aldehydes","Positive",0.0727423390731086,0.0287016312147354,0.0389797219733802
+"SGL-WQS (survey, lambda.min path)",3777,"Aromatic_hydrocarbons_neg","Aromatic hydrocarbons","Negative",-0.114370527198046,0.0329742854701771,0.0104273417714745
+"SGL-WQS (survey, lambda.min path)",3777,"Dienes_alkenes_epoxides_neg","Dienes/alkenes/epoxides","Negative",-0.17274655683651,0.032700712069518,0.00114474256759436
+"SGL-WQS (survey, lambda.min path)",3777,"Nitrile_amide_cyanide_related_neg","Nitrile/amide/cyanide-related","Negative",-0.0672659259312194,0.0279873049986559,0.0472265821141823

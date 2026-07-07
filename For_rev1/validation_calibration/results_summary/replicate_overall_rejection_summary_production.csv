@@ -1,0 +1,15 @@
+scenario_id,scenario_family,n,outcome_family,within_r,between_r,is_true_null,tests,rejects,rejection_rate
+gaussian_null_n1000_w0p2_b0,gaussian_null,1000,gaussian,0.2,0,TRUE,1146,65,0.056719022687609075
+gaussian_null_n1000_w0p95_b0,gaussian_null,1000,gaussian,0.95,0,TRUE,1199,61,0.05087572977481234
+global_binary_n5000_w0p2_b0,global_binary,5000,binomial,0.2,0,TRUE,2893,141,0.04873833390943657
+global_binary_n5000_w0p95_b0,global_binary,5000,binomial,0.95,0,TRUE,2984,152,0.05093833780160858
+global_binary_n500_w0p2_b0,global_binary,500,binomial,0.2,0,TRUE,2836,130,0.045839210155148094
+global_binary_n500_w0p95_b0,global_binary,500,binomial,0.95,0,TRUE,2994,164,0.05477621910487642
+partial_binary_n5000_w0p6_b0,partial_binary,5000,binomial,0.6,0,FALSE,899,364,0.40489432703003336
+partial_binary_n5000_w0p6_b0,partial_binary,5000,binomial,0.6,0,TRUE,639,38,0.0594679186228482
+partial_binary_n5000_w0p6_b0p3,partial_binary,5000,binomial,0.6,0.3,FALSE,899,365,0.40600667408231367
+partial_binary_n5000_w0p6_b0p3,partial_binary,5000,binomial,0.6,0.3,TRUE,646,35,0.05417956656346749
+partial_binary_n500_w0p6_b0,partial_binary,500,binomial,0.6,0,FALSE,898,63,0.07015590200445435
+partial_binary_n500_w0p6_b0,partial_binary,500,binomial,0.6,0,TRUE,815,51,0.06257668711656442
+partial_binary_n500_w0p6_b0p3,partial_binary,500,binomial,0.6,0.3,FALSE,896,56,0.0625
+partial_binary_n500_w0p6_b0p3,partial_binary,500,binomial,0.6,0.3,TRUE,813,50,0.06150061500615006

@@ -1,0 +1,1624 @@
+---
+title: "NHANES VOC Survey Demo"
+subtitle: "Urinary VOC metabolites, log-GGT, and survey refit"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = TRUE,
+  fig.width = 11,
+  fig.height = 7,
+  out.width = "100%",
+  dpi = 150,
+  warning = TRUE,
+  message = TRUE
+)
+
+cwd_norm <- normalizePath(getwd(), mustWork = TRUE)
+PROJECT_ROOT <- if (basename(cwd_norm) == "analysis") dirname(cwd_norm) else cwd_norm
+
+fig_dir <- file.path(PROJECT_ROOT, "analysis", "figures", "nhanes_voc_demo")
+out_dir <- file.path(PROJECT_ROOT, "analysis", "outputs")
+cache_dir <- file.path(PROJECT_ROOT, "analysis", "cache")
+dir.create(fig_dir, showWarnings = FALSE, recursive = TRUE)
+dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
+dir.create(cache_dir, showWarnings = FALSE, recursive = TRUE)
+```
+
+```{r parameters}
+RUN_MODE <- Sys.getenv("SGLWQS_RUN_MODE", "smoke")
+IS_SMOKE <- identical(tolower(RUN_MODE), "smoke")
+
+N_QUANTILES <- as.integer(Sys.getenv("SGLWQS_N_QUANTILES", "4"))
+N_BOOT <- as.integer(Sys.getenv("SGLWQS_N_BOOT", if (IS_SMOKE) "5" else "200"))
+N_WORKERS <- as.integer(Sys.getenv("SGLWQS_N_WORKERS", "8"))
+N_FOLDS <- as.integer(Sys.getenv("SGLWQS_NFOLDS", if (IS_SMOKE) "3" else "10"))
+SGL_BOOTSTRAP <- tolower(Sys.getenv("SGLWQS_BOOTSTRAP", if (IS_SMOKE) "false" else "true")) %in% c("true", "1", "yes")
+SMOKE_MAX_N <- as.integer(Sys.getenv("NHANES_VOC_SMOKE_N", if (IS_SMOKE) "600" else "0"))
+
+SEEDS <- if (IS_SMOKE) {
+  c(101)
+} else {
+  c(71, 42, 123, 256, 314, 500, 617, 789, 888, 999,
+    1001, 1123, 1234, 1357, 1500, 1618, 1729, 1847, 1963, 2048,
+    2222, 2345, 2500, 2718, 2801, 3001, 3141, 3333, 3500, 3777)
+}
+seed_override <- Sys.getenv("SGLWQS_SEEDS", "")
+if (nzchar(seed_override)) {
+  SEEDS <- as.integer(strsplit(seed_override, ",", fixed = TRUE)[[1]])
+}
+
+PRIMARY_OUTCOME <- Sys.getenv("NHANES_VOC_OUTCOME", "log_ggt")
+PRIMARY_DIRECTION <- Sys.getenv("NHANES_VOC_PRIMARY_DIRECTION", "Positive")
+COVARIATE_SET <- Sys.getenv("NHANES_VOC_COVARIATE_SET", "dag_primary")
+OUTPUT_STEM <- Sys.getenv("NHANES_VOC_OUTPUT_STEM", "nhanes_voc_demo")
+REFRESH_NHANES <- tolower(Sys.getenv("NHANES_REFRESH", "false")) %in% c("true", "1", "yes")
+SHOW_WEIGHT_TABLES <- tolower(Sys.getenv("NHANES_VOC_SHOW_WEIGHT_TABLES", "false")) %in% c("true", "1", "yes")
+SHOW_WEIGHT_FIGURES <- tolower(Sys.getenv("NHANES_VOC_SHOW_WEIGHT_FIGURES", "true")) %in% c("true", "1", "yes")
+
+lambda_env <- Sys.getenv("SGLWQS_LAMBDA", "0")
+SGL_LAMBDA <- if (lambda_env %in% c("0", "0.0")) 0 else lambda_env
+
+RUN_QGCOMP <- tolower(Sys.getenv("RUN_QGCOMP", "true")) %in% c("true", "1", "yes")
+RUN_GWQS <- tolower(Sys.getenv("RUN_GWQS", "true")) %in% c("true", "1", "yes")
+RUN_GROUPWQS <- tolower(Sys.getenv("RUN_GROUPWQS", "true")) %in% c("true", "1", "yes")
+RUN_SGLWQS <- tolower(Sys.getenv("RUN_SGLWQS", "true")) %in% c("true", "1", "yes")
+RUN_SGLWQS_UNWEIGHTED <- tolower(Sys.getenv("RUN_SGLWQS_UNWEIGHTED", "true")) %in% c("true", "1", "yes")
+RUN_SGLWQS_SURVEY <- tolower(Sys.getenv("RUN_SGLWQS_SURVEY", "true")) %in% c("true", "1", "yes")
+RUN_SGLWQS_LAMBDA_COMPARISON <- tolower(Sys.getenv("RUN_SGLWQS_LAMBDA_COMPARISON", "false")) %in%
+  c("true", "1", "yes")
+SGL_COMPARE_BOOTSTRAP <- tolower(Sys.getenv("SGLWQS_COMPARE_BOOTSTRAP", "false")) %in%
+  c("true", "1", "yes")
+USE_MODEL_CACHE <- tolower(Sys.getenv("NHANES_VOC_USE_MODEL_CACHE", "true")) %in% c("true", "1", "yes")
+REFRESH_MODEL_CACHE <- tolower(Sys.getenv("NHANES_VOC_REFRESH_MODEL_CACHE", "false")) %in% c("true", "1", "yes")
+
+survey_lambda_path_values <- Sys.getenv("SGLWQS_SURVEY_LAMBDA_PATH", "")
+use_survey_explicit_lambda_path <- tolower(Sys.getenv("SGLWQS_SURVEY_EXPLICIT_LAMBDA_PATH", "false")) %in%
+  c("true", "1", "yes") || RUN_SGLWQS_LAMBDA_COMPARISON
+SGL_SURVEY_LAMBDA_PATH <- NULL
+if (nzchar(survey_lambda_path_values)) {
+  SGL_SURVEY_LAMBDA_PATH <- as.numeric(strsplit(survey_lambda_path_values, ",", fixed = TRUE)[[1]])
+} else if (use_survey_explicit_lambda_path) {
+  survey_lambda_max <- as.numeric(Sys.getenv("SGLWQS_SURVEY_LAMBDA_MAX", "0.1"))
+  survey_lambda_min <- as.numeric(Sys.getenv("SGLWQS_SURVEY_LAMBDA_MIN", if (RUN_SGLWQS_LAMBDA_COMPARISON) "1e-8" else "1e-6"))
+  survey_lambda_n <- as.integer(Sys.getenv("SGLWQS_SURVEY_LAMBDA_N", "80"))
+  SGL_SURVEY_LAMBDA_PATH <- exp(seq(log(survey_lambda_max), log(survey_lambda_min), length.out = survey_lambda_n))
+}
+
+survey_lambda_path_summary <- if (is.null(SGL_SURVEY_LAMBDA_PATH)) {
+  "NULL"
+} else {
+  sprintf(
+    "explicit n=%d, range=[%.3g, %.3g]",
+    length(SGL_SURVEY_LAMBDA_PATH),
+    min(SGL_SURVEY_LAMBDA_PATH),
+    max(SGL_SURVEY_LAMBDA_PATH)
+  )
+}
+
+covariate_sets <- list(
+  minimal = c("age", "sex", "race"),
+  ucr = c("age", "sex", "race", "log_ucr"),
+  bmi_ucr = c("age", "sex", "race", "bmi", "log_ucr"),
+  dag_primary = c("age", "sex", "race", "pir", "log_cotinine", "bmi", "log_ucr"),
+  dag_no_tobacco = c("age", "sex", "race", "pir", "bmi", "log_ucr"),
+  survey_reduced = c("age", "sex", "race4", "bmi", "log_ucr")
+)
+if (!COVARIATE_SET %in% names(covariate_sets)) {
+  stop("Unknown NHANES_VOC_COVARIATE_SET: ", COVARIATE_SET,
+       ". Available: ", paste(names(covariate_sets), collapse = ", "),
+       call. = FALSE)
+}
+
+settings_tbl <- data.frame(
+  setting = c("RUN_MODE", "N_BOOT", "N_SEEDS", "N_WORKERS", "N_FOLDS",
+              "N_QUANTILES", "SGL_BOOTSTRAP", "SMOKE_MAX_N", "PRIMARY_OUTCOME",
+              "PRIMARY_DIRECTION", "COVARIATE_SET", "OUTPUT_STEM",
+              "SGL_LAMBDA", "RUN_SGLWQS_UNWEIGHTED", "RUN_SGLWQS_SURVEY",
+              "RUN_SGLWQS_LAMBDA_COMPARISON", "SGL_COMPARE_BOOTSTRAP",
+              "SGL_SURVEY_LAMBDA_PATH", "USE_MODEL_CACHE",
+              "REFRESH_MODEL_CACHE", "SHOW_WEIGHT_TABLES", "SHOW_WEIGHT_FIGURES"),
+  value = c(RUN_MODE, N_BOOT, length(SEEDS), N_WORKERS, N_FOLDS,
+            N_QUANTILES, SGL_BOOTSTRAP, SMOKE_MAX_N, PRIMARY_OUTCOME,
+            PRIMARY_DIRECTION, COVARIATE_SET, OUTPUT_STEM,
+            as.character(SGL_LAMBDA), RUN_SGLWQS_UNWEIGHTED, RUN_SGLWQS_SURVEY,
+            RUN_SGLWQS_LAMBDA_COMPARISON, SGL_COMPARE_BOOTSTRAP,
+            survey_lambda_path_summary, USE_MODEL_CACHE,
+            REFRESH_MODEL_CACHE, SHOW_WEIGHT_TABLES, SHOW_WEIGHT_FIGURES)
+)
+knitr::kable(settings_tbl)
+```
+
+# Overview
+
+This R Markdown file is a public-data method demonstration using urinary
+VOC metabolites from NHANES 2017-2020 pre-pandemic data. The default outcome is
+log-transformed gamma-glutamyl transferase (`log_ggt`), a liver-related marker
+for which larger values are interpreted as less favorable. The prespecified
+primary mixture direction is therefore positive: higher VOC-mixture burden is
+expected to correspond to higher `log_ggt`.
+
+Negative-index estimates are still retained for two-index methods, but they are
+treated as secondary/descriptive. The VOC classes defined below are the a priori
+chemical/metabolic groups used by groupWQS and SGL-WQS; for qgcomp and gWQS,
+the same classes are only analyte annotations and are not separate group-level
+estimands.
+
+Because the exposures are measured in the P_UVOC subsample, the complex-survey
+refit uses the VOC subsample weight (`WTSAPRP`) with NHANES PSU and strata.
+Changing the continuous outcome from the nutrient example to `log_ggt` changes
+the complete-case analytic sample, but not the survey design variables.
+
+The default covariate set is `dag_primary`, which adds the DAG-based adjustment
+variables plus urinary creatinine for dilution adjustment. `dag_no_tobacco` is
+available as a sensitivity setting when the goal is to retain tobacco-related
+VOC burden as part of the mixture contrast rather than adjust for cotinine.
+`survey_reduced` collapses race/ethnicity and omits PIR/cotinine for a lower
+degree-of-freedom survey sensitivity run. The default SGL-WQS setting uses
+`lambda = 0`, turning sparse selection off for a transparent survey/refit
+validation aligned with the exact-match checks; `SGLWQS_LAMBDA=lambda.min` can
+be set for a sparse-selection sensitivity run.
+
+The main comparison includes:
+
+- qgcomp, gWQS, and groupWQS on the analysis dataset without survey design.
+- SGL-WQS without survey design.
+- SGL-WQS with `survey::svydesign()` using the VOC subsample weight.
+
+The SGL-WQS survey analysis uses the current API with `survey_design` and
+`analysis_id`. For local development, this Rmd can load the source tree or the
+tarball `sglwqs_0.8.13.9001.tar.gz`.
+
+# Packages
+
+```{r packages}
+required_pkgs <- c(
+  "nhanesA", "survey", "qgcomp", "gWQS", "groupWQS",
+  "dagitty", "dplyr", "tidyr", "ggplot2", "knitr", "kableExtra",
+  "future", "future.apply"
+)
+missing_pkgs <- required_pkgs[!vapply(required_pkgs, requireNamespace, logical(1), quietly = TRUE)]
+if (length(missing_pkgs) > 0) {
+  stop("Install missing package(s): ", paste(missing_pkgs, collapse = ", "), call. = FALSE)
+}
+
+load_sglwqs <- function() {
+  mode <- Sys.getenv("SGLWQS_LOAD_MODE", "installed")
+  source_dir <- Sys.getenv("SGLWQS_SOURCE_DIR", "")
+  tarball <- Sys.getenv("SGLWQS_PACKAGE_TARBALL", "")
+
+  if (identical(mode, "source") && dir.exists(source_dir)) {
+    if (!requireNamespace("pkgload", quietly = TRUE)) {
+      stop("Package 'pkgload' is required for SGLWQS_LOAD_MODE=source.", call. = FALSE)
+    }
+    pkgload::load_all(source_dir, quiet = TRUE)
+    return(invisible("source"))
+  }
+
+  if (identical(mode, "tarball") && file.exists(tarball)) {
+    local_lib <- Sys.getenv(
+      "SGLWQS_LOCAL_LIB",
+      file.path(PROJECT_ROOT, "analysis", "_r_libs", "sglwqs_0.8.13.9001")
+    )
+    dir.create(local_lib, showWarnings = FALSE, recursive = TRUE)
+    utils::install.packages(tarball, repos = NULL, type = "source", lib = local_lib, quiet = TRUE)
+    .libPaths(c(local_lib, .libPaths()))
+    suppressPackageStartupMessages(library(sglwqs))
+    return(invisible("tarball"))
+  }
+
+  suppressPackageStartupMessages(library(sglwqs))
+  invisible("installed")
+}
+
+sglwqs_load_mode <- load_sglwqs()
+
+suppressPackageStartupMessages({
+  library(nhanesA)
+  library(survey)
+  library(qgcomp)
+  library(gWQS)
+  library(groupWQS)
+  library(dagitty)
+  library(dplyr)
+  library(tidyr)
+  library(ggplot2)
+  library(knitr)
+  library(kableExtra)
+  library(future)
+  library(future.apply)
+})
+
+options(survey.lonely.psu = "adjust")
+
+package_tbl <- data.frame(
+  package = c(required_pkgs, "sglwqs"),
+  version = vapply(c(required_pkgs, "sglwqs"), function(pkg) {
+    as.character(utils::packageVersion(pkg))
+  }, character(1)),
+  stringsAsFactors = FALSE
+)
+package_tbl$loaded_from <- ifelse(package_tbl$package == "sglwqs", sglwqs_load_mode, "")
+knitr::kable(package_tbl)
+```
+
+# DAG And Covariates
+
+The primary covariate set is based on a simple causal DAG for urinary VOC
+metabolites and log-GGT. Age, sex, race/ethnicity, socioeconomic position,
+smoking, and BMI are treated as potential common causes of VOC biomarker levels
+and liver-related outcome variation. Urinary creatinine is handled separately as
+a measurement/dilution covariate for urinary VOC concentrations.
+
+```{r dag-covariates, fig.width=8, fig.height=5}
+voc_dag <- dagitty::dagitty('dag {
+Age [pos="0,2"]
+Sex [pos="0,1"]
+RaceEthnicity [pos="0,0"]
+SES [pos="1,0"]
+Smoking [pos="1,2"]
+BMI [pos="2,2"]
+UrineDilution [pos="2,0"]
+VOC [exposure,pos="3,1"]
+GGT [outcome,pos="5,1"]
+
+Age -> BMI
+Age -> GGT
+Age -> UrineDilution
+Age -> VOC
+Sex -> BMI
+Sex -> GGT
+Sex -> UrineDilution
+Sex -> VOC
+RaceEthnicity -> GGT
+RaceEthnicity -> SES
+RaceEthnicity -> Smoking
+RaceEthnicity -> VOC
+SES -> GGT
+SES -> Smoking
+SES -> VOC
+Smoking -> GGT
+Smoking -> VOC
+BMI -> GGT
+BMI -> UrineDilution
+BMI -> VOC
+UrineDilution -> VOC
+VOC -> GGT
+}')
+
+plot(voc_dag)
+
+pdf(file.path(fig_dir, paste0(OUTPUT_STEM, "_dag.pdf")), width = 8, height = 5)
+plot(voc_dag)
+invisible(dev.off())
+
+dag_sets <- dagitty::adjustmentSets(voc_dag, exposure = "VOC", outcome = "GGT", type = "minimal")
+dag_set_tbl <- data.frame(
+  set = seq_along(dag_sets),
+  variables = vapply(dag_sets, function(x) paste(x, collapse = ", "), character(1)),
+  stringsAsFactors = FALSE
+)
+knitr::kable(dag_set_tbl, caption = "DAGitty minimal adjustment set(s) for VOC -> GGT.")
+
+dag_variable_map <- data.frame(
+  dag_node = c("Age", "Sex", "RaceEthnicity", "SES", "Smoking", "BMI", "UrineDilution"),
+  nhanes_variable = c("RIDAGEYR", "RIAGENDR", "RIDRETH3", "INDFMPIR", "LBXCOT", "BMXBMI", "URXUCR"),
+  model_variable = c("age", "sex", "race", "pir", "log_cotinine", "bmi", "log_ucr"),
+  role = c(rep("DAG adjustment", 6), "Urinary dilution adjustment"),
+  stringsAsFactors = FALSE
+)
+knitr::kable(dag_variable_map, caption = "Mapping from DAG nodes to NHANES/model covariates.")
+
+covariate_set_tbl <- data.frame(
+  set = names(covariate_sets),
+  variables = vapply(covariate_sets, function(x) paste(x, collapse = ", "), character(1)),
+  stringsAsFactors = FALSE
+)
+knitr::kable(covariate_set_tbl, caption = "Implemented covariate set options.")
+```
+
+# VOC Data
+
+```{r voc-map}
+voc_groups <- list(
+  Aromatic_hydrocarbons = c("URX2MH", "URX34M", "URXBMA", "URXMAD", "URXPHG"),
+  Dienes_alkenes_epoxides = c("URXDHB", "URXMB3", "URXIPM3", "URXHP2"),
+  Nitrile_amide_cyanide_related = c("URXAAM", "URXAMC", "URXCEM", "URXCYM", "URXATC"),
+  Reactive_aldehydes = c("URXHPM", "URXPMM")
+)
+
+voc_exposures <- unname(unlist(voc_groups, use.names = FALSE))
+
+voc_group_map <- data.frame(
+  variable = voc_exposures,
+  group = rep(names(voc_groups), lengths(voc_groups)),
+  stringsAsFactors = FALSE
+) |>
+  dplyr::mutate(
+    group_label = dplyr::recode(
+      group,
+      Aromatic_hydrocarbons = "Aromatic hydrocarbons",
+      Dienes_alkenes_epoxides = "Dienes/alkenes/epoxides",
+      Nitrile_amide_cyanide_related = "Nitrile/amide/cyanide-related",
+      Reactive_aldehydes = "Reactive aldehydes"
+    )
+  )
+
+voc_names <- c(
+  URX2MH = "2-methylhippuric acid",
+  URX34M = "3-/4-methylhippuric acid",
+  URXBMA = "N-acetyl-S-(benzyl)-L-cysteine",
+  URXMAD = "Mandelic acid",
+  URXPHG = "Phenylglyoxylic acid",
+  URXDHB = "N-acetyl-S-(3,4-dihydroxybutyl)-L-cysteine",
+  URXMB3 = "N-acetyl-S-(4-hydroxy-2-butenyl)-L-cysteine",
+  URXIPM3 = "N-acetyl-S-(4-hydroxy-2-methyl-2-buten-1-yl)-L-cysteine",
+  URXHP2 = "N-acetyl-S-(2-hydroxypropyl)-L-cysteine",
+  URXAAM = "N-acetyl-S-(2-carbamoylethyl)-L-cysteine",
+  URXAMC = "N-acetyl-S-(N-methylcarbamoyl)-L-cysteine",
+  URXCEM = "N-acetyl-S-(2-carboxyethyl)-L-cysteine",
+  URXCYM = "N-acetyl-S-(2-cyanoethyl)-L-cysteine",
+  URXATC = "2-aminothiazoline-4-carboxylic acid",
+  URXHPM = "N-acetyl-S-(3-hydroxypropyl)-L-cysteine",
+  URXPMM = "N-acetyl-S-(3-hydroxypropyl-1-methyl)-L-cysteine"
+)
+
+parent_proxy <- c(
+  URX2MH = "o-xylene",
+  URX34M = "m-/p-xylene",
+  URXBMA = "toluene",
+  URXMAD = "styrene/ethylbenzene",
+  URXPHG = "styrene/ethylbenzene",
+  URXDHB = "1,3-butadiene",
+  URXMB3 = "1,3-butadiene",
+  URXIPM3 = "isoprene",
+  URXHP2 = "propylene oxide",
+  URXAAM = "acrylamide",
+  URXAMC = "N,N-dimethylformamide",
+  URXCEM = "acrylonitrile/acrolein-related",
+  URXCYM = "acrylonitrile",
+  URXATC = "cyanide-related exposure",
+  URXHPM = "acrolein",
+  URXPMM = "crotonaldehyde"
+)
+
+voc_annotation <- voc_group_map |>
+  dplyr::mutate(
+    metabolite = unname(voc_names[variable]),
+    parent_proxy = unname(parent_proxy[variable])
+  ) |>
+  dplyr::select(variable, metabolite, parent_proxy, group_label)
+
+knitr::kable(voc_annotation, caption = "Selected P_UVOC analytes: unweighted detection >= 75%; URXBPM excluded.")
+```
+
+```{r data-download}
+nhanes_cache_file <- file.path(cache_dir, "nhanes_puvoc_2017_2020_tables.rds")
+
+download_nhanes_tables <- function(refresh = FALSE) {
+  if (file.exists(nhanes_cache_file) && !isTRUE(refresh)) {
+    return(readRDS(nhanes_cache_file))
+  }
+
+  tabs <- c("P_UVOC", "P_DEMO", "P_BIOPRO", "P_HSCRP", "P_BMX", "P_ALB_CR", "P_COT")
+  dat <- lapply(tabs, function(tab) {
+    message("Downloading NHANES table: ", tab)
+    nhanesA::nhanes(tab, translated = FALSE)
+  })
+  names(dat) <- tabs
+  saveRDS(dat, nhanes_cache_file)
+  dat
+}
+
+nhanes_tables <- download_nhanes_tables(refresh = REFRESH_NHANES)
+vapply(nhanes_tables, nrow, integer(1))
+```
+
+```{r build-data}
+left_merge <- function(x, y) merge(x, y, by = "SEQN", all.x = TRUE, sort = FALSE)
+
+nh <- nhanes_tables$P_UVOC
+for (tab in c("P_DEMO", "P_BIOPRO", "P_HSCRP", "P_BMX", "P_ALB_CR", "P_COT")) {
+  nh <- left_merge(nh, nhanes_tables[[tab]])
+}
+
+nh$.analysis_id <- nh$SEQN
+nh$log_ggt <- log(nh$LBXSGTSI)
+nh$log_crp <- log(nh$LBXHSCRP)
+nh$log_ucr <- log(nh$URXUCR)
+nh$log_cotinine <- log1p(nh$LBXCOT)
+nh$age <- nh$RIDAGEYR
+nh$sex <- factor(nh$RIAGENDR, levels = c(1, 2), labels = c("Male", "Female"))
+nh$race <- factor(nh$RIDRETH3)
+nh$race4 <- factor(
+  dplyr::case_when(
+    nh$RIDRETH3 %in% c(1, 2) ~ "Hispanic",
+    nh$RIDRETH3 == 3 ~ "NH_White",
+    nh$RIDRETH3 == 4 ~ "NH_Black",
+    nh$RIDRETH3 %in% c(6, 7) ~ "NH_Asian_Other",
+    TRUE ~ NA_character_
+  ),
+  levels = c("NH_White", "NH_Black", "Hispanic", "NH_Asian_Other")
+)
+nh$bmi <- nh$BMXBMI
+nh$pir <- nh$INDFMPIR
+
+base_covariates <- covariate_sets[[COVARIATE_SET]]
+
+analysis_vars <- c(
+  ".analysis_id", "SEQN", "SDMVPSU", "SDMVSTRA", "WTSAPRP",
+  PRIMARY_OUTCOME, voc_exposures, base_covariates
+)
+
+analysis_df <- nh |>
+  dplyr::filter(!is.na(WTSAPRP), WTSAPRP > 0, RIDAGEYR >= 20) |>
+  dplyr::filter(stats::complete.cases(dplyr::across(dplyr::all_of(analysis_vars)))) |>
+  dplyr::filter(.data[[PRIMARY_OUTCOME]] > -Inf, is.finite(.data[[PRIMARY_OUTCOME]])) |>
+  as.data.frame()
+
+full_analysis_n <- nrow(analysis_df)
+if (SMOKE_MAX_N > 0 && nrow(analysis_df) > SMOKE_MAX_N) {
+  set.seed(20260622)
+  smoke_idx <- sort(sample(seq_len(nrow(analysis_df)), size = SMOKE_MAX_N))
+  analysis_df <- analysis_df[smoke_idx, , drop = FALSE]
+}
+
+covariate_model_df <- analysis_df[, base_covariates, drop = FALSE]
+covariate_matrix <- stats::model.matrix(~ ., data = covariate_model_df)
+covariate_matrix <- covariate_matrix[, colnames(covariate_matrix) != "(Intercept)", drop = FALSE]
+colnames(covariate_matrix) <- make.names(colnames(covariate_matrix), unique = TRUE)
+covariate_df <- as.data.frame(covariate_matrix)
+
+model_df <- cbind(
+  analysis_df[, c(".analysis_id", "SEQN", "SDMVPSU", "SDMVSTRA", "WTSAPRP", PRIMARY_OUTCOME, voc_exposures)],
+  covariate_df
+)
+model_df$outcome <- model_df[[PRIMARY_OUTCOME]]
+rownames(model_df) <- as.character(model_df$.analysis_id)
+
+covariate_terms <- colnames(covariate_df)
+
+nhanes_design <- survey::svydesign(
+  ids = ~SDMVPSU,
+  strata = ~SDMVSTRA,
+  weights = ~WTSAPRP,
+  nest = TRUE,
+  data = model_df
+)
+
+data_summary <- data.frame(
+  item = c("NHANES table", "sample", "age restriction", "outcome",
+           "covariate set", "base covariates", "full complete-case n",
+           "analysis n used", "VOC analytes", "covariate terms", "survey df"),
+  value = c("P_UVOC + P_DEMO/P_BIOPRO/P_HSCRP/P_BMX/P_ALB_CR/P_COT",
+            "WTSAPRP > 0", "RIDAGEYR >= 20", PRIMARY_OUTCOME,
+            COVARIATE_SET, paste(base_covariates, collapse = ", "),
+            full_analysis_n, nrow(model_df), length(voc_exposures), length(covariate_terms),
+            survey::degf(nhanes_design))
+)
+knitr::kable(data_summary, caption = "Analysis dataset summary")
+```
+
+```{r detection-summary}
+comment_codes <- c(
+  URX2MH = "URD2MHLC",
+  URX34M = "URD34MLC",
+  URXAAM = "URDAAMLC",
+  URXAMC = "URDAMCLC",
+  URXATC = "URDATCLC",
+  URXBMA = "URDBMALC",
+  URXCEM = "URDCEMLC",
+  URXCYM = "URDCYMLC",
+  URXDHB = "URDDHBLC",
+  URXHPM = "URDHPMLC",
+  URXHP2 = "URDHP2LC",
+  URXIPM3 = "URDPM3LC",
+  URXMAD = "URDMADLC",
+  URXMB3 = "URDMB3LC",
+  URXPHG = "URDPHGLC",
+  URXPMM = "URDPMMLC"
+)
+
+screen_df <- nh |>
+  dplyr::filter(!is.na(WTSAPRP), WTSAPRP > 0)
+
+detection_summary <- lapply(voc_exposures, function(v) {
+  cc <- screen_df[[comment_codes[[v]]]]
+  wt <- screen_df$WTSAPRP
+  ok <- !is.na(cc) & !is.na(wt) & wt > 0
+  data.frame(
+    variable = v,
+    metabolite = unname(voc_names[[v]]),
+    group = voc_group_map$group_label[match(v, voc_group_map$variable)],
+    n_nonmissing = sum(!is.na(screen_df[[v]])),
+    missing_rate = mean(is.na(screen_df[[v]])),
+    detect_rate_unweighted = mean(cc[ok] == 0),
+    detect_rate_weighted = sum(wt[ok] * (cc[ok] == 0)) / sum(wt[ok]),
+    stringsAsFactors = FALSE
+  )
+}) |>
+  dplyr::bind_rows() |>
+  dplyr::arrange(group, dplyr::desc(detect_rate_unweighted))
+
+readr_available <- requireNamespace("readr", quietly = TRUE)
+if (readr_available) {
+  readr::write_csv(detection_summary, file.path(out_dir, paste0(OUTPUT_STEM, "_detection_summary.csv")))
+} else {
+  utils::write.csv(detection_summary, file.path(out_dir, paste0(OUTPUT_STEM, "_detection_summary.csv")), row.names = FALSE)
+}
+
+knitr::kable(
+  detection_summary |>
+    dplyr::mutate(dplyr::across(c(missing_rate, detect_rate_unweighted, detect_rate_weighted), round, 3)),
+  caption = "Detection summary for selected VOC metabolites"
+)
+```
+
+# Helper Functions
+
+```{r helpers}
+`%||%` <- function(x, y) {
+  if (is.null(x)) y else x
+}
+
+empty_weights <- function() {
+  data.frame(
+    method = character(),
+    seed = integer(),
+    variable = character(),
+    group = character(),
+    direction = character(),
+    weight = numeric(),
+    stringsAsFactors = FALSE
+  )
+}
+
+empty_effects <- function() {
+  data.frame(
+    method = character(),
+    seed = integer(),
+    term = character(),
+    group = character(),
+    direction = character(),
+    estimate = numeric(),
+    std_error = numeric(),
+    p_value = numeric(),
+    stringsAsFactors = FALSE
+  )
+}
+
+empty_errors <- function() {
+  data.frame(
+    method = character(),
+    seed = integer(),
+    message = character(),
+    stringsAsFactors = FALSE
+  )
+}
+
+empty_survey_diagnostics <- function() {
+  data.frame(
+    method = character(),
+    fit_type = character(),
+    seed = integer(),
+    survey_degf = numeric(),
+    refit_residual_df = numeric(),
+    refit_coef_rows = integer(),
+    retained_effect_rows = integer(),
+    nonzero_positive_coef = integer(),
+    nonzero_negative_coef = integer(),
+    nonzero_positive_weights = integer(),
+    nonzero_negative_weights = integer(),
+    positive_weight_sum = numeric(),
+    negative_weight_sum = numeric(),
+    lambda_path_source = character(),
+    lambda_path_length = integer(),
+    lambda_path_min = numeric(),
+    lambda_path_max = numeric(),
+    selected_lambda = numeric(),
+    selected_lambda_at_path_boundary = logical(),
+    backend_jerr = integer(),
+    backend_warnings = character(),
+    retained_terms = character(),
+    note = character(),
+    stringsAsFactors = FALSE
+  )
+}
+
+weight_group <- function(variable) {
+  voc_group_map$group_label[match(variable, voc_group_map$variable)]
+}
+
+extract_qgcomp_weights <- function(fit, seed) {
+  vars <- c(names(fit$pos.weights), names(fit$neg.weights))
+  if (length(vars) == 0) return(empty_weights())
+  data.frame(
+    method = "qgcomp",
+    seed = seed,
+    variable = vars,
+    group = NA_character_,
+    direction = c(rep("Positive", length(fit$pos.weights)), rep("Negative", length(fit$neg.weights))),
+    weight = c(as.numeric(fit$pos.weights), as.numeric(fit$neg.weights)),
+    stringsAsFactors = FALSE
+  )
+}
+
+extract_qgcomp_effects <- function(fit, seed) {
+  pval <- fit$pval
+  pval_psi <- if (!is.null(names(pval)) && "psi1" %in% names(pval)) {
+    pval[["psi1"]]
+  } else {
+    utils::tail(as.numeric(pval), 1)
+  }
+  data.frame(
+    method = "qgcomp",
+    seed = seed,
+    term = "psi1",
+    group = "Overall mixture",
+    direction = "Net",
+    estimate = as.numeric(fit$psi),
+    std_error = sqrt(as.numeric(fit$var.psi)),
+    p_value = as.numeric(pval_psi),
+    stringsAsFactors = FALSE
+  )
+}
+
+extract_gwqs_weights <- function(fit, seed) {
+  fw <- fit$final_weights
+  out <- empty_weights()
+  if ("mean_weight_p" %in% names(fw)) {
+    out <- dplyr::bind_rows(out, data.frame(
+      method = "gWQS",
+      seed = seed,
+      variable = fw$mix_name,
+      group = NA_character_,
+      direction = "Positive",
+      weight = as.numeric(fw$mean_weight_p),
+      stringsAsFactors = FALSE
+    ))
+  }
+  if ("mean_weight_n" %in% names(fw)) {
+    out <- dplyr::bind_rows(out, data.frame(
+      method = "gWQS",
+      seed = seed,
+      variable = fw$mix_name,
+      group = NA_character_,
+      direction = "Negative",
+      weight = as.numeric(fw$mean_weight_n),
+      stringsAsFactors = FALSE
+    ))
+  }
+  out
+}
+
+extract_gwqs_effects <- function(fit, seed) {
+  coef_table <- tryCatch(summary(fit$fit)$coefficients, error = function(e) NULL)
+  if (is.null(coef_table)) return(empty_effects())
+  terms <- intersect(c("pwqs", "nwqs"), rownames(coef_table))
+  if (length(terms) == 0) return(empty_effects())
+  p_col <- intersect(c("Pr(>|t|)", "Pr(>|z|)", "Pr(>|W|)"), colnames(coef_table))[1]
+  data.frame(
+    method = "gWQS",
+    seed = seed,
+    term = terms,
+    group = "Overall mixture",
+    direction = ifelse(terms == "pwqs", "Positive", "Negative"),
+    estimate = coef_table[terms, "Estimate"],
+    std_error = coef_table[terms, "Std. Error"],
+    p_value = if (!is.na(p_col)) coef_table[terms, p_col] else NA_real_,
+    stringsAsFactors = FALSE
+  )
+}
+
+extract_groupwqs_weights <- function(fit, seed) {
+  out <- empty_weights()
+  for (i in seq_along(fit$weights)) {
+    wi <- fit$weights[[i]]
+    out <- dplyr::bind_rows(out, data.frame(
+      method = "groupWQS",
+      seed = seed,
+      variable = names(wi),
+      group = weight_group(names(wi)),
+      direction = "Combined",
+      weight = as.numeric(wi),
+      stringsAsFactors = FALSE
+    ))
+  }
+  out
+}
+
+extract_groupwqs_effects <- function(fit, seed) {
+  coef_table <- tryCatch(summary(fit$fit)$coefficients, error = function(e) NULL)
+  if (is.null(coef_table)) return(empty_effects())
+  terms <- intersect(paste0("GWQS", seq_along(voc_groups)), rownames(coef_table))
+  if (length(terms) == 0) return(empty_effects())
+  p_col <- intersect(c("Pr(>|t|)", "Pr(>|z|)", "Pr(>|W|)"), colnames(coef_table))[1]
+  data.frame(
+    method = "groupWQS",
+    seed = seed,
+    term = terms,
+    group = voc_group_map |>
+      dplyr::distinct(group, group_label) |>
+      dplyr::arrange(match(group, names(voc_groups))) |>
+      dplyr::pull(group_label) |>
+      utils::head(length(terms)),
+    direction = "Combined",
+    estimate = coef_table[terms, "Estimate"],
+    std_error = coef_table[terms, "Std. Error"],
+    p_value = if (!is.na(p_col)) coef_table[terms, p_col] else NA_real_,
+    stringsAsFactors = FALSE
+  )
+}
+
+extract_sgl_weights <- function(fit, method_label, seed) {
+  w <- tryCatch(sglwqs::extract_weights(fit, direction = "both"), error = function(e) NULL)
+  if (is.null(w) || nrow(w) == 0) return(empty_weights())
+  data.frame(
+    method = method_label,
+    seed = seed,
+    variable = w$variable,
+    group = weight_group(w$variable),
+    direction = tools::toTitleCase(w$direction),
+    weight = w$weight,
+    stringsAsFactors = FALSE
+  )
+}
+
+extract_sgl_effects <- function(fit, method_label, seed) {
+  coef_table <- fit$refit_info$coef_table
+  if (is.null(coef_table) || nrow(coef_table) == 0) return(empty_effects())
+  rn <- rownames(coef_table)
+  keep <- grepl("(_pos|_neg)$|^(wqs_pos|wqs_neg)$", rn)
+  if (!any(keep)) return(empty_effects())
+  p_col <- intersect(c("Pr(>|t|)", "Pr(>|z|)", "Pr(>|W|)", "p.value"), colnames(coef_table))[1]
+  terms <- rn[keep]
+  group_from_term <- function(term) {
+    raw <- sub("(_pos|_neg)$", "", term)
+    raw <- sub("^wqs$", "Overall mixture", raw)
+    label_map <- voc_group_map |>
+      dplyr::distinct(group, group_label)
+    out <- label_map$group_label[match(raw, label_map$group)]
+    ifelse(is.na(out), raw, out)
+  }
+  data.frame(
+    method = method_label,
+    seed = seed,
+    term = terms,
+    group = vapply(terms, group_from_term, character(1)),
+    direction = ifelse(grepl("(_pos$|wqs_pos$)", terms), "Positive", "Negative"),
+    estimate = coef_table[keep, "Estimate"],
+    std_error = coef_table[keep, "Std. Error"],
+    p_value = if (!is.na(p_col)) coef_table[keep, p_col] else NA_real_,
+    stringsAsFactors = FALSE
+  )
+}
+
+extract_sgl_diagnostics <- function(fit, method_label, fit_type, seed,
+                                    weight_rows, effect_rows,
+                                    survey_design = NULL, note = "") {
+  coef_table <- tryCatch(fit$refit_info$coef_table, error = function(e) NULL)
+  refit_fit <- tryCatch(fit$refit_info$refit_fit, error = function(e) NULL)
+  if (is.null(refit_fit)) {
+    refit_fit <- tryCatch(fit$refit_info$fit, error = function(e) NULL)
+  }
+  residual_df <- tryCatch(stats::df.residual(refit_fit), error = function(e) NA_real_)
+
+  nonzero_positive_coef <- sum(abs(fit$pos_coef) > 1e-12, na.rm = TRUE)
+  nonzero_negative_coef <- sum(abs(fit$neg_coef) > 1e-12, na.rm = TRUE)
+  nonzero_positive <- sum(weight_rows$direction == "Positive" & weight_rows$weight > 0, na.rm = TRUE)
+  nonzero_negative <- sum(weight_rows$direction == "Negative" & weight_rows$weight > 0, na.rm = TRUE)
+  positive_weight_sum <- sum(weight_rows$weight[weight_rows$direction == "Positive"], na.rm = TRUE)
+  negative_weight_sum <- sum(weight_rows$weight[weight_rows$direction == "Negative"], na.rm = TRUE)
+  retained_terms <- if (nrow(effect_rows) > 0) paste(effect_rows$term, collapse = "; ") else ""
+  sel_diag <- fit$selection_diagnostics %||% list()
+  backend_warnings <- sel_diag$backend_warnings %||% character(0)
+
+  if (!nzchar(note) && nrow(effect_rows) == 0 && (nonzero_positive + nonzero_negative) > 0) {
+    note <- "nonzero training weights but no downstream survey-refit index retained; inspect minor-direction threshold, rank, and survey df"
+  } else if (!nzchar(note) && nrow(effect_rows) == 0 &&
+             (nonzero_positive_coef + nonzero_negative_coef) == 0) {
+    note <- "survey-weighted SGL selection returned all-zero exposure coefficients; no downstream survey-refit index retained"
+  } else if (!nzchar(note) && nrow(effect_rows) == 0) {
+    note <- "no downstream survey-refit index retained"
+  }
+
+  data.frame(
+    method = method_label,
+    fit_type = fit_type,
+    seed = seed,
+    survey_degf = if (!is.null(survey_design)) survey::degf(survey_design) else NA_real_,
+    refit_residual_df = as.numeric(residual_df),
+    refit_coef_rows = if (!is.null(coef_table)) nrow(coef_table) else 0L,
+    retained_effect_rows = nrow(effect_rows),
+    nonzero_positive_coef = nonzero_positive_coef,
+    nonzero_negative_coef = nonzero_negative_coef,
+    nonzero_positive_weights = nonzero_positive,
+    nonzero_negative_weights = nonzero_negative,
+    positive_weight_sum = positive_weight_sum,
+    negative_weight_sum = negative_weight_sum,
+    lambda_path_source = sel_diag$lambda_path_source %||% NA_character_,
+    lambda_path_length = sel_diag$lambda_path_length %||% NA_integer_,
+    lambda_path_min = sel_diag$lambda_path_min %||% NA_real_,
+    lambda_path_max = sel_diag$lambda_path_max %||% NA_real_,
+    selected_lambda = sel_diag$selected_lambda %||% NA_real_,
+    selected_lambda_at_path_boundary = sel_diag$selected_lambda_at_path_boundary %||% NA,
+    backend_jerr = sel_diag$backend_jerr %||% NA_integer_,
+    backend_warnings = if (length(backend_warnings) > 0) paste(backend_warnings, collapse = " | ") else "",
+    retained_terms = retained_terms,
+    note = note,
+    stringsAsFactors = FALSE
+  )
+}
+
+make_sgl_error_diagnostic <- function(method_label, fit_type, seed,
+                                      lambda_path = NULL,
+                                      survey_design = NULL,
+                                      note = "") {
+  data.frame(
+    method = method_label,
+    fit_type = fit_type,
+    seed = seed,
+    survey_degf = if (!is.null(survey_design)) survey::degf(survey_design) else NA_real_,
+    refit_residual_df = NA_real_,
+    refit_coef_rows = 0L,
+    retained_effect_rows = 0L,
+    nonzero_positive_coef = 0L,
+    nonzero_negative_coef = 0L,
+    nonzero_positive_weights = 0L,
+    nonzero_negative_weights = 0L,
+    positive_weight_sum = 0,
+    negative_weight_sum = 0,
+    lambda_path_source = if (is.null(lambda_path)) "sparsegl_auto" else "user_explicit",
+    lambda_path_length = if (is.null(lambda_path)) NA_integer_ else length(lambda_path),
+    lambda_path_min = if (is.null(lambda_path)) NA_real_ else min(lambda_path),
+    lambda_path_max = if (is.null(lambda_path)) NA_real_ else max(lambda_path),
+    selected_lambda = NA_real_,
+    selected_lambda_at_path_boundary = NA,
+    backend_jerr = NA_integer_,
+    backend_warnings = "",
+    retained_terms = "",
+    note = note,
+    stringsAsFactors = FALSE
+  )
+}
+
+safe_fit <- function(method, seed, expr) {
+  tryCatch(
+    list(result = force(expr), error = NULL),
+    error = function(e) list(result = NULL, error = data.frame(
+      method = method,
+      seed = seed,
+      message = conditionMessage(e),
+      stringsAsFactors = FALSE
+    ))
+  )
+}
+```
+
+# Model Fits
+
+```{r run-models, cache=FALSE}
+all_weights <- empty_weights()
+all_effects <- empty_effects()
+all_errors <- empty_errors()
+all_survey_diagnostics <- empty_survey_diagnostics()
+model_cache_file <- file.path(cache_dir, paste0(OUTPUT_STEM, "_model_results.rds"))
+
+if (USE_MODEL_CACHE && file.exists(model_cache_file) && !REFRESH_MODEL_CACHE) {
+  cached_results <- readRDS(model_cache_file)
+  all_weights <- cached_results$all_weights
+  all_effects <- cached_results$all_effects
+  all_errors <- cached_results$all_errors
+  all_survey_diagnostics <- cached_results$all_survey_diagnostics
+  message("Loaded cached model results from: ", model_cache_file)
+} else {
+
+exposure_formula_part <- paste(voc_exposures, collapse = " + ")
+covariate_formula_part <- if (length(covariate_terms) > 0) {
+  paste(covariate_terms, collapse = " + ")
+} else {
+  NULL
+}
+full_rhs <- paste(c(exposure_formula_part, covariate_formula_part), collapse = " + ")
+
+qgcomp_formula <- stats::as.formula(paste("outcome ~", full_rhs))
+gwqs_formula <- stats::as.formula(
+  paste("outcome ~ pwqs + nwqs", if (!is.null(covariate_formula_part)) paste("+", covariate_formula_part) else "")
+)
+
+sgl_unweighted_specs <- if (RUN_SGLWQS_LAMBDA_COMPARISON) {
+  list(
+    list(
+      label = "SGL-WQS (unweighted, lambda=0)",
+      lambda = 0,
+      lambda_path = NULL,
+      bootstrap = SGL_COMPARE_BOOTSTRAP
+    ),
+    list(
+      label = "SGL-WQS (unweighted, lambda.min path)",
+      lambda = "lambda.min",
+      lambda_path = SGL_SURVEY_LAMBDA_PATH,
+      bootstrap = SGL_COMPARE_BOOTSTRAP
+    )
+  )
+} else {
+  list(
+    list(
+      label = "SGL-WQS (unweighted)",
+      lambda = SGL_LAMBDA,
+      lambda_path = NULL,
+      bootstrap = SGL_BOOTSTRAP
+    )
+  )
+}
+
+sgl_survey_specs <- if (RUN_SGLWQS_LAMBDA_COMPARISON) {
+  list(
+    list(
+      label = "SGL-WQS (survey, lambda=0)",
+      lambda = 0,
+      lambda_path = NULL,
+      bootstrap = FALSE
+    ),
+    list(
+      label = "SGL-WQS (survey, lambda.min path)",
+      lambda = "lambda.min",
+      lambda_path = SGL_SURVEY_LAMBDA_PATH,
+      bootstrap = FALSE
+    )
+  )
+} else {
+  list(
+    list(
+      label = "SGL-WQS (survey)",
+      lambda = SGL_LAMBDA,
+      lambda_path = SGL_SURVEY_LAMBDA_PATH,
+      bootstrap = FALSE
+    )
+  )
+}
+
+method_levels <- c(
+  "qgcomp", "gWQS", "groupWQS",
+  vapply(sgl_unweighted_specs, `[[`, character(1), "label"),
+  vapply(sgl_survey_specs, `[[`, character(1), "label")
+)
+
+if (RUN_QGCOMP) {
+  qc <- safe_fit("qgcomp", NA_integer_, {
+    qgcomp::qgcomp.glm.noboot(
+      f = qgcomp_formula,
+      expnms = voc_exposures,
+      data = model_df[, c("outcome", voc_exposures, covariate_terms), drop = FALSE],
+      family = gaussian(),
+      q = N_QUANTILES
+    )
+  })
+  if (is.null(qc$error)) {
+    all_weights <- dplyr::bind_rows(all_weights, extract_qgcomp_weights(qc$result, seed = NA_integer_))
+    all_effects <- dplyr::bind_rows(all_effects, extract_qgcomp_effects(qc$result, seed = NA_integer_))
+  } else {
+    all_errors <- dplyr::bind_rows(all_errors, qc$error)
+  }
+}
+
+run_seed_models <- function(seed) {
+  old_survey_options <- options(survey.lonely.psu = "adjust")
+  on.exit(options(old_survey_options), add = TRUE)
+
+  message("Seed: ", seed)
+  seed_weights <- empty_weights()
+  seed_effects <- empty_effects()
+  seed_errors <- empty_errors()
+  seed_survey_diagnostics <- empty_survey_diagnostics()
+
+  if (RUN_GWQS) {
+    fit_gwqs <- safe_fit("gWQS", seed, {
+      gWQS::gwqs(
+        formula = gwqs_formula,
+        mix_name = voc_exposures,
+        data = model_df[, c("outcome", voc_exposures, covariate_terms), drop = FALSE],
+        q = N_QUANTILES,
+        validation = 0.4,
+        b = N_BOOT,
+        b1_pos = TRUE,
+        rh = 1,
+        family = "gaussian",
+        seed = seed,
+        plan_strategy = "sequential"
+      )
+    })
+    if (is.null(fit_gwqs$error)) {
+      seed_weights <- dplyr::bind_rows(seed_weights, extract_gwqs_weights(fit_gwqs$result, seed))
+      seed_effects <- dplyr::bind_rows(seed_effects, extract_gwqs_effects(fit_gwqs$result, seed))
+    } else {
+      seed_errors <- dplyr::bind_rows(seed_errors, fit_gwqs$error)
+    }
+  }
+
+  if (RUN_GROUPWQS) {
+    fit_groupwqs <- safe_fit("groupWQS", seed, {
+      group_list <- unname(voc_groups)
+      x_gw <- groupWQS::make.X(model_df, num.groups = length(group_list), groups = group_list)
+      x_s <- groupWQS::make.x.s(model_df, num.groups = length(group_list), groups = group_list)
+      z <- if (length(covariate_terms) > 0) {
+        as.matrix(model_df[, covariate_terms, drop = FALSE])
+      } else {
+        NULL
+      }
+      set.seed(seed)
+      train_idx <- sort(sample(seq_len(nrow(model_df)), size = round(nrow(model_df) * 0.6)))
+      valid_idx <- setdiff(seq_len(nrow(model_df)), train_idx)
+      groupWQS::gwqs.fit(
+        y = model_df$outcome[valid_idx],
+        y.train = model_df$outcome[train_idx],
+        x = x_gw[valid_idx, , drop = FALSE],
+        x.train = x_gw[train_idx, , drop = FALSE],
+        z = if (!is.null(z)) z[valid_idx, , drop = FALSE] else NULL,
+        z.train = if (!is.null(z)) z[train_idx, , drop = FALSE] else NULL,
+        x.s = x_s,
+        B = N_BOOT,
+        n.quantiles = N_QUANTILES,
+        func = "continuous"
+      )
+    })
+    if (is.null(fit_groupwqs$error)) {
+      seed_weights <- dplyr::bind_rows(seed_weights, extract_groupwqs_weights(fit_groupwqs$result, seed))
+      seed_effects <- dplyr::bind_rows(seed_effects, extract_groupwqs_effects(fit_groupwqs$result, seed))
+    } else {
+      seed_errors <- dplyr::bind_rows(seed_errors, fit_groupwqs$error)
+    }
+  }
+
+  if (RUN_SGLWQS && RUN_SGLWQS_UNWEIGHTED) {
+    for (sgl_spec in sgl_unweighted_specs) {
+      fit_sgl_unweighted <- safe_fit(sgl_spec$label, seed, {
+        sglwqs::sglwqs(
+          X = model_df[, voc_exposures, drop = FALSE],
+          y = model_df$outcome,
+          covariates = if (length(covariate_terms) > 0) model_df[, covariate_terms, drop = FALSE] else NULL,
+          groups = voc_groups,
+          n_quantiles = N_QUANTILES,
+          family = "gaussian",
+          lambda = sgl_spec$lambda,
+          lambda_path = sgl_spec$lambda_path,
+          nfolds = N_FOLDS,
+          bootstrap = sgl_spec$bootstrap,
+          n_boot = N_BOOT,
+          parallel = FALSE,
+          refit = "full",
+          refit_engine = "glm",
+          seed = seed,
+          verbose = FALSE
+        )
+      })
+      if (is.null(fit_sgl_unweighted$error)) {
+        unweighted_weights <- extract_sgl_weights(fit_sgl_unweighted$result, sgl_spec$label, seed)
+        unweighted_effects <- extract_sgl_effects(fit_sgl_unweighted$result, sgl_spec$label, seed)
+        seed_weights <- dplyr::bind_rows(seed_weights, unweighted_weights)
+        seed_effects <- dplyr::bind_rows(seed_effects, unweighted_effects)
+        seed_survey_diagnostics <- dplyr::bind_rows(
+          seed_survey_diagnostics,
+          extract_sgl_diagnostics(
+            fit_sgl_unweighted$result, sgl_spec$label, "unweighted", seed,
+            unweighted_weights, unweighted_effects
+          )
+        )
+      } else {
+        seed_errors <- dplyr::bind_rows(seed_errors, fit_sgl_unweighted$error)
+        seed_survey_diagnostics <- dplyr::bind_rows(
+          seed_survey_diagnostics,
+          make_sgl_error_diagnostic(
+            method_label = sgl_spec$label,
+            fit_type = "unweighted",
+            seed = seed,
+            lambda_path = sgl_spec$lambda_path,
+            note = paste("unweighted fit error:", fit_sgl_unweighted$error$message)
+          )
+        )
+      }
+    }
+  }
+
+  if (RUN_SGLWQS && RUN_SGLWQS_SURVEY) {
+    for (sgl_spec in sgl_survey_specs) {
+      fit_sgl_survey <- safe_fit(sgl_spec$label, seed, {
+        sglwqs::sglwqs(
+          X = model_df[, voc_exposures, drop = FALSE],
+          y = model_df$outcome,
+          covariates = if (length(covariate_terms) > 0) model_df[, covariate_terms, drop = FALSE] else NULL,
+          groups = voc_groups,
+          n_quantiles = N_QUANTILES,
+          family = "gaussian",
+          lambda = sgl_spec$lambda,
+          lambda_path = sgl_spec$lambda_path,
+          nfolds = N_FOLDS,
+          bootstrap = sgl_spec$bootstrap,
+          n_boot = N_BOOT,
+          parallel = FALSE,
+          refit = "full",
+          refit_engine = "svyglm",
+          survey_design = nhanes_design,
+          analysis_id = model_df$.analysis_id,
+          seed = seed,
+          verbose = FALSE
+        )
+      })
+      if (is.null(fit_sgl_survey$error)) {
+        survey_weights <- extract_sgl_weights(fit_sgl_survey$result, sgl_spec$label, seed)
+        survey_effects <- extract_sgl_effects(fit_sgl_survey$result, sgl_spec$label, seed)
+        seed_weights <- dplyr::bind_rows(seed_weights, survey_weights)
+        seed_effects <- dplyr::bind_rows(seed_effects, survey_effects)
+        seed_survey_diagnostics <- dplyr::bind_rows(
+          seed_survey_diagnostics,
+          extract_sgl_diagnostics(
+            fit_sgl_survey$result, sgl_spec$label, "survey", seed,
+            survey_weights, survey_effects, survey_design = nhanes_design
+          )
+        )
+      } else {
+        seed_errors <- dplyr::bind_rows(seed_errors, fit_sgl_survey$error)
+        seed_survey_diagnostics <- dplyr::bind_rows(
+          seed_survey_diagnostics,
+          make_sgl_error_diagnostic(
+            method_label = sgl_spec$label,
+            fit_type = "survey",
+            seed = seed,
+            lambda_path = sgl_spec$lambda_path,
+            survey_design = nhanes_design,
+            note = paste("survey fit error:", fit_sgl_survey$error$message)
+          )
+        )
+      }
+    }
+  }
+
+  list(
+    weights = seed_weights,
+    effects = seed_effects,
+    errors = seed_errors,
+    survey_diagnostics = seed_survey_diagnostics
+  )
+}
+
+with_future_plan <- function(workers, expr) {
+  old_plan <- future::plan()
+  on.exit(future::plan(old_plan), add = TRUE)
+  future::plan(future::multisession, workers = workers)
+  force(expr)
+}
+
+run_seed_results <- list()
+if (length(SEEDS) > 0 && (RUN_GWQS || RUN_GROUPWQS || RUN_SGLWQS)) {
+  seed_workers <- min(N_WORKERS, length(SEEDS))
+  can_parallelize_seeds <- seed_workers > 1 && !identical(sglwqs_load_mode, "source")
+
+  if (can_parallelize_seeds) {
+    message("Running seed-level models with ", seed_workers, " workers.")
+    run_seed_results <- with_future_plan(seed_workers, {
+      future.apply::future_lapply(
+        SEEDS,
+        run_seed_models,
+        future.seed = TRUE,
+        future.scheduling = Inf,
+        future.packages = c("gWQS", "groupWQS", "sglwqs", "dplyr", "survey")
+      )
+    })
+  } else {
+    if (seed_workers > 1 && identical(sglwqs_load_mode, "source")) {
+      message("SGLWQS_LOAD_MODE=source detected; running seed-level models sequentially.")
+    }
+    run_seed_results <- lapply(SEEDS, run_seed_models)
+  }
+
+  all_weights <- dplyr::bind_rows(all_weights, dplyr::bind_rows(lapply(run_seed_results, `[[`, "weights")))
+  all_effects <- dplyr::bind_rows(all_effects, dplyr::bind_rows(lapply(run_seed_results, `[[`, "effects")))
+  all_errors <- dplyr::bind_rows(all_errors, dplyr::bind_rows(lapply(run_seed_results, `[[`, "errors")))
+  all_survey_diagnostics <- dplyr::bind_rows(
+    all_survey_diagnostics,
+    dplyr::bind_rows(lapply(run_seed_results, `[[`, "survey_diagnostics"))
+  )
+}
+
+saveRDS(
+  list(
+    settings = settings_tbl,
+    all_weights = all_weights,
+    all_effects = all_effects,
+    all_errors = all_errors,
+    all_survey_diagnostics = all_survey_diagnostics,
+    method_levels = method_levels
+  ),
+  model_cache_file
+)
+message("Saved model results cache to: ", model_cache_file)
+}
+
+method_levels <- unique(c(
+  "qgcomp", "gWQS", "groupWQS",
+  as.character(all_weights$method),
+  as.character(all_effects$method),
+  as.character(all_survey_diagnostics$method)
+))
+
+all_weights <- all_weights |>
+  dplyr::mutate(
+    method = factor(method, levels = method_levels)
+  )
+
+all_effects <- all_effects |>
+  dplyr::mutate(
+    method = factor(method, levels = method_levels)
+  )
+
+utils::write.csv(all_weights, file.path(out_dir, paste0(OUTPUT_STEM, "_weights.csv")), row.names = FALSE)
+utils::write.csv(all_effects, file.path(out_dir, paste0(OUTPUT_STEM, "_effects.csv")), row.names = FALSE)
+utils::write.csv(all_errors, file.path(out_dir, paste0(OUTPUT_STEM, "_errors.csv")), row.names = FALSE)
+utils::write.csv(all_survey_diagnostics, file.path(out_dir, paste0(OUTPUT_STEM, "_survey_diagnostics.csv")), row.names = FALSE)
+
+cat("Weights rows:", nrow(all_weights), "\n")
+cat("Effects rows:", nrow(all_effects), "\n")
+cat("Errors rows:", nrow(all_errors), "\n")
+cat("Survey diagnostic rows:", nrow(all_survey_diagnostics), "\n")
+```
+
+```{r errors}
+if (nrow(all_errors) > 0) {
+  knitr::kable(all_errors, caption = "Model errors")
+} else {
+  cat("No model errors recorded.\n")
+}
+```
+
+```{r survey-diagnostics}
+if (nrow(all_survey_diagnostics) > 0) {
+  knitr::kable(
+    all_survey_diagnostics |>
+      dplyr::mutate(dplyr::across(c(survey_degf, refit_residual_df, positive_weight_sum, negative_weight_sum), ~ round(.x, 2))),
+    caption = "SGL-WQS selection/refit diagnostics"
+  )
+  survey_diag <- all_survey_diagnostics |>
+    dplyr::filter(fit_type == "survey")
+  if (nrow(survey_diag) > 0 &&
+      all(survey_diag$nonzero_positive_weights == 0 &
+          survey_diag$nonzero_negative_weights == 0)) {
+    cat("\n\nAll SGL-WQS survey rows have zero exposure weights in this run. ",
+        "Treat the survey branch as a diagnostic failure of survey-weighted selection, ",
+        "not as a substantive survey-refit comparison.\n", sep = "")
+  }
+} else {
+  cat("No SGL-WQS survey diagnostics recorded.\n")
+}
+```
+
+# Results
+
+```{r weight-summary-table}
+weight_summary <- all_weights |>
+  dplyr::mutate(voc_class = weight_group(variable)) |>
+  dplyr::group_by(method, direction, group, variable, voc_class) |>
+  dplyr::summarise(
+    mean_weight = mean(weight, na.rm = TRUE),
+    sd_weight = stats::sd(weight, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  dplyr::arrange(method, direction, group, variable)
+
+plot_weight_summary <- weight_summary |>
+  dplyr::mutate(
+    voc_class = factor(voc_class, levels = unique(voc_group_map$group_label)),
+    direction = factor(direction, levels = c("Positive", "Negative", "Combined", "Net"))
+  ) |>
+  dplyr::filter(!is.na(voc_class), !is.na(direction))
+
+if (SHOW_WEIGHT_TABLES) {
+  knitr::kable(
+    plot_weight_summary |>
+      dplyr::mutate(dplyr::across(c(mean_weight, sd_weight), ~ round(.x, 4))),
+    caption = "Variable-level weights by VOC class and direction. qgcomp/gWQS use VOC class only as analyte annotation."
+  )
+} else {
+  cat("Variable-level weight tables are not printed in this HTML. Full weights are saved to `analysis/outputs/", OUTPUT_STEM, "_weights.csv`.\n", sep = "")
+}
+```
+
+```{r weight-plot, fig.height=10, fig.width=14}
+if (SHOW_WEIGHT_FIGURES && nrow(plot_weight_summary) > 0) {
+  p_weights <- ggplot(plot_weight_summary, aes(x = variable, y = mean_weight, fill = method)) +
+    geom_col(position = position_dodge(width = 0.72), width = 0.66, alpha = 0.85) +
+    geom_errorbar(
+      aes(ymin = pmax(mean_weight - sd_weight, 0), ymax = mean_weight + sd_weight),
+      position = position_dodge(width = 0.72),
+      width = 0.18,
+      linewidth = 0.25,
+      na.rm = TRUE
+    ) +
+    coord_flip() +
+    facet_grid(voc_class ~ direction, scales = "free_y", space = "free_y") +
+    labs(
+      title = paste0("NHANES VOC demo: Weights by Direction (", length(SEEDS), " seed", ifelse(length(SEEDS) == 1, "", "s"), ")"),
+      subtitle = paste0(
+        "Modeled after the gWQS::tiwqs_data comparison output. Outcome: ", PRIMARY_OUTCOME,
+        "; n = ", nrow(model_df), "; bootstrap B = ", N_BOOT,
+        ". groupWQS reports Combined weights; SGL-WQS survey uses design-weighted selection/refit. ",
+        "For qgcomp/gWQS, VOC class is analyte annotation only."
+      ),
+      x = NULL,
+      y = "Mean weight"
+    ) +
+    theme_bw(base_size = 12) +
+    theme(
+      legend.position = "bottom",
+      strip.background = element_rect(fill = "gray95"),
+      strip.text = element_text(face = "bold"),
+      axis.text.y = element_text(size = 8)
+    )
+  print(p_weights)
+
+  ggsave(file.path(fig_dir, paste0(OUTPUT_STEM, "_weights.pdf")), p_weights,
+         width = 280, height = 260, units = "mm", dpi = 300)
+} else {
+  cat("Variable-level weight plot is omitted.\n")
+}
+```
+
+```{r heatmap, fig.height=10, fig.width=12}
+if (SHOW_WEIGHT_FIGURES && nrow(plot_weight_summary) > 0) {
+  p_heat <- ggplot(plot_weight_summary, aes(x = method, y = variable, fill = mean_weight)) +
+    geom_tile(color = "white", linewidth = 0.25) +
+    facet_grid(voc_class ~ direction, scales = "free_y", space = "free_y") +
+    scale_fill_distiller(palette = "YlOrRd", direction = 1, name = "Mean\nweight") +
+    labs(
+      title = paste0("NHANES VOC demo: Mean Weight Heatmap (", length(SEEDS), " seed", ifelse(length(SEEDS) == 1, "", "s"), ")"),
+      subtitle = "Modeled after the gWQS::tiwqs_data mean-weight heatmap; Combined denotes groupWQS. SGL-WQS survey uses design-weighted selection/refit. For qgcomp/gWQS, VOC class is analyte annotation only.",
+      x = NULL,
+      y = NULL
+    ) +
+    theme_minimal(base_size = 12) +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      axis.text.y = element_text(size = 8),
+      strip.text = element_text(face = "bold")
+    )
+  print(p_heat)
+
+  ggsave(file.path(fig_dir, paste0(OUTPUT_STEM, "_weight_heatmap.pdf")), p_heat,
+         width = 250, height = 260, units = "mm", dpi = 300)
+} else {
+  cat("Variable-level weight heatmap is omitted.\n")
+}
+```
+
+```{r weight-stability, fig.height=6, fig.width=12}
+weight_cv <- all_weights |>
+  dplyr::mutate(voc_class = weight_group(variable)) |>
+  dplyr::filter(!is.na(voc_class), !is.na(seed), direction %in% c("Positive", "Negative", "Combined")) |>
+  dplyr::group_by(method, variable, voc_class) |>
+  dplyr::summarise(
+    mean_weight = mean(weight, na.rm = TRUE),
+    sd_weight = stats::sd(weight, na.rm = TRUE),
+    cv = ifelse(mean_weight > 0.01, sd_weight / mean_weight, NA_real_),
+    n = dplyr::n(),
+    .groups = "drop"
+  ) |>
+  dplyr::filter(!is.na(cv), n > 1)
+
+if (SHOW_WEIGHT_FIGURES && nrow(weight_cv) > 0) {
+  weight_cv <- weight_cv |>
+    dplyr::mutate(voc_class = factor(voc_class, levels = unique(voc_group_map$group_label)))
+
+  p_cv <- ggplot(weight_cv, aes(x = method, y = cv, fill = method)) +
+    geom_boxplot(alpha = 0.45, outlier.size = 1) +
+    geom_jitter(width = 0.15, size = 1, alpha = 0.55) +
+    facet_wrap(~voc_class, nrow = 1) +
+    labs(
+      title = paste0("NHANES VOC demo: Weight Stability (CV) by Method (", length(SEEDS), " seeds)"),
+      subtitle = "Lower CV indicates more stable weights across seeds.",
+      x = NULL,
+      y = "Coefficient of variation"
+    ) +
+    theme_bw(base_size = 12) +
+    theme(legend.position = "none", axis.text.x = element_text(angle = 30, hjust = 1))
+  print(p_cv)
+
+  ggsave(file.path(fig_dir, paste0(OUTPUT_STEM, "_weight_stability_cv.pdf")), p_cv,
+         width = 250, height = 120, units = "mm", dpi = 300)
+} else {
+  cat("Weight stability CV plot requires at least two non-missing seeds per method/variable.\n")
+}
+```
+
+```{r effect-table}
+cat(
+  "For SGL-WQS, this table shows indices retained in the downstream refit. ",
+  "Directions with non-zero training weights can still be omitted from the refit ",
+  "when their index mass is below the minor-direction threshold; variable-level ",
+  "weights remain available in the weights CSV.\n",
+  sep = ""
+)
+
+fmt_p <- function(p_value) {
+  ifelse(is.na(p_value), "NA", format.pval(p_value, digits = 3, eps = 0.001))
+}
+
+fmt_single_effect <- function(label, estimate, std_error, p_value) {
+  sprintf("%s = %.3f (SE = %.3f, p = %s)", label, estimate, std_error, fmt_p(p_value))
+}
+
+fmt_seed_summary <- function(label, median_est, q1, q3, se_med, sig_n, n) {
+  sprintf(
+    "%s: %.3f [%.3f, %.3f] (SE = %.3f), sig %d/%d",
+    label, median_est, q1, q3, se_med, sig_n, n
+  )
+}
+
+effect_stats <- all_effects |>
+  dplyr::group_by(method, group, direction, term) |>
+  dplyr::summarise(
+    n = dplyr::n(),
+    median_est = stats::median(estimate, na.rm = TRUE),
+    q1 = stats::quantile(estimate, 0.25, na.rm = TRUE),
+    q3 = stats::quantile(estimate, 0.75, na.rm = TRUE),
+    se_med = stats::median(std_error, na.rm = TRUE),
+    sig_n = sum(p_value < 0.05, na.rm = TRUE),
+    p_med = stats::median(p_value, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  dplyr::mutate(
+    median_est = ifelse(is.nan(median_est), NA_real_, median_est),
+    q1 = ifelse(is.nan(q1), NA_real_, q1),
+    q3 = ifelse(is.nan(q3), NA_real_, q3),
+    se_med = ifelse(is.nan(se_med), NA_real_, se_med),
+    p_med = ifelse(is.nan(p_med), NA_real_, p_med)
+  )
+
+format_grouped_stats <- function(dat, empty_message) {
+  if (nrow(dat) == 0) return(empty_message)
+  dat <- dat |>
+    dplyr::mutate(
+      scope = ifelse(is.na(group) | group == "", "Overall mixture", group),
+      direction = factor(direction, levels = c("Positive", "Negative", "Combined", "Net")),
+      effect_label = dplyr::case_when(
+        scope == "Overall mixture" & term %in% c("pwqs", "nwqs", "psi1") ~ term,
+        TRUE ~ as.character(direction)
+      ),
+      prefix = ifelse(scope == "Overall mixture", "", paste0(scope, " "))
+    ) |>
+    dplyr::arrange(scope, direction, term)
+
+  paste(
+    sprintf(
+      "%s%s",
+      dat$prefix,
+      mapply(
+        fmt_seed_summary,
+        label = dat$effect_label,
+        median_est = dat$median_est,
+        q1 = dat$q1,
+        q3 = dat$q3,
+        se_med = dat$se_med,
+        sig_n = dat$sig_n,
+        n = dat$n,
+        SIMPLIFY = TRUE
+      )
+    ),
+    collapse = ";<br>"
+  )
+}
+
+qgcomp_row <- all_effects |>
+  dplyr::filter(method == "qgcomp") |>
+  dplyr::slice(1)
+qgcomp_str <- if (nrow(qgcomp_row) > 0) {
+  fmt_single_effect("ψ", qgcomp_row$estimate, qgcomp_row$std_error, qgcomp_row$p_value)
+} else {
+  "Not run or failed"
+}
+
+gwqs_str <- format_grouped_stats(
+  effect_stats |> dplyr::filter(method == "gWQS"),
+  "Not run or failed"
+)
+
+groupwqs_str <- format_grouped_stats(
+  effect_stats |> dplyr::filter(method == "groupWQS"),
+  "Not run, failed, or no group coefficient returned"
+)
+
+sgl_methods <- method_levels[grepl("^SGL-WQS", method_levels)]
+sgl_rows <- lapply(sgl_methods, function(m) {
+  data.frame(
+    Method = m,
+    `Estimand / Reporting` = if (grepl("survey", m, ignore.case = TRUE)) {
+      "Group × direction-specific survey refit<br>median [IQR], sig/n"
+    } else {
+      "Group × direction-specific refit<br>median [IQR], sig/n"
+    },
+    `Key estimates` = format_grouped_stats(
+      effect_stats |> dplyr::filter(method == m),
+      "No downstream refit index retained in this run"
+    ),
+    check.names = FALSE
+  )
+})
+
+method_summary <- dplyr::bind_rows(
+  data.frame(
+    Method = c("qgcomp", "gWQS", "groupWQS"),
+    `Estimand / Reporting` = c(
+    "Net mixture effect ψ<br>(unweighted, deterministic)",
+    "Two-index overall mixture<br>median [IQR] across seeds",
+    "Group-specific β<br>Combined direction, median [IQR]"
+    ),
+    `Key estimates` = c(qgcomp_str, gwqs_str, groupwqs_str),
+    check.names = FALSE
+  ),
+  dplyr::bind_rows(sgl_rows)
+)
+
+knitr::kable(
+  method_summary,
+  format = "html",
+  caption = paste0(
+    "NHANES VOC mixture example: effect estimates across methods. ",
+    "Output layout follows the gWQS::tiwqs_data comparison table."
+  ),
+  escape = FALSE
+) |>
+  kableExtra::kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"),
+    full_width = TRUE,
+    font_size = 13
+  ) |>
+  kableExtra::column_spec(1, bold = TRUE, width = "10em") |>
+  kableExtra::column_spec(2, width = "18em") |>
+  kableExtra::column_spec(3, width = "52em")
+```
+
+```{r sgl-survey-compare, fig.height=6, fig.width=10}
+sgl_effects <- all_effects |>
+  dplyr::filter(grepl("^SGL-WQS", as.character(method)))
+
+if (nrow(sgl_effects) > 0) {
+  p_sgl_eff <- ggplot(sgl_effects, aes(x = group, y = estimate, color = method)) +
+    geom_hline(yintercept = 0, linetype = "dashed", linewidth = 0.3) +
+    geom_point(position = position_dodge(width = 0.45), size = 2) +
+    facet_wrap(~direction) +
+    coord_flip() +
+    labs(
+      title = "SGL-WQS downstream refit estimates by analysis variant",
+      x = NULL,
+      y = "Refit estimate"
+    ) +
+    theme_bw(base_size = 12) +
+    theme(legend.position = "bottom")
+  print(p_sgl_eff)
+  ggsave(file.path(fig_dir, paste0(OUTPUT_STEM, "_sglwqs_survey_vs_unweighted.pdf")),
+         p_sgl_eff, width = 220, height = 120, units = "mm", dpi = 300)
+} else {
+  cat("No SGL-WQS effects available to plot.\n")
+}
+```
+
+# Notes for Manuscript Use
+
+This analysis is intended as a demonstration rather than a new etiologic claim.
+The 16-analyte set keeps only P_UVOC metabolites with at least 75% unweighted
+detection among participants with positive VOC subsample weights; quartile
+scoring then reduces sensitivity to left-censoring concentrated in the lower
+tail. Survey design does not remove LOD/tie issues, but it is relevant for
+population-weighted cutpoints, selection weights, and downstream variance
+estimation.
+
+The cleanest text framing is:
+
+> We used NHANES 2017-2020 urinary VOC metabolites as a public-data
+> demonstration of survey-aware SGL-WQS refitting and bootstrap-based
+> uncertainty estimation in an environmental-mixture setting.

@@ -1,0 +1,5 @@
+"scenario_id","scenario_family","n","within_r","between_r","completed","total","pending","completion_rate"
+"split_global_binary_n500_w0p2_b0","split_global_binary",500,0.2,0,100,100,0,1
+"split_global_binary_n5000_w0p2_b0","split_global_binary",5000,0.2,0,100,100,0,1
+"split_partial_binary_n500_w0p6_b0p3","split_partial_binary",500,0.6,0.3,100,100,0,1
+"split_partial_binary_n5000_w0p6_b0p3","split_partial_binary",5000,0.6,0.3,100,100,0,1

@@ -1,0 +1,388 @@
+---
+title: "Effect-estimate bias, RMSE, and coverage"
+subtitle: "Common all-exposure quantile contrast where estimands are comparable by construction"
+author: "SGL-WQS reviewer response"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    number_sections: true
+    theme: flatly
+    highlight: tango
+    code_folding: show
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 10,
+  fig.height = 6,
+  dpi = 150
+)
+
+repo_root <- normalizePath(file.path(getwd(), if (dir.exists("analysis")) "." else ".."))
+source(file.path(repo_root, "analysis", "_sglwqs_review_helpers.R"))
+load_review_packages(c(
+  "MASS", "Matrix", "dplyr", "tidyr", "ggplot2", "knitr", "kableExtra",
+  "qgcomp", "gWQS", "groupWQS", "pkgload"
+))
+sglwqs_source <- load_review_sglwqs(root = repo_root)
+
+RUN_MODE <- review_run_mode()
+IS_FULL <- identical(RUN_MODE, "full")
+N_WORKERS <- review_workers(RUN_MODE)
+N <- as.integer(Sys.getenv("SGLWQS_EFFECT_N", if (IS_FULL) 1000 else 180))
+N_SEEDS <- as.integer(Sys.getenv("SGLWQS_EFFECT_SEEDS", if (IS_FULL) 30 else 3))
+N_BOOT <- as.integer(Sys.getenv("SGLWQS_EFFECT_BOOT", if (IS_FULL) 50 else 5))
+NFOLDS <- as.integer(Sys.getenv("SGLWQS_NFOLDS", if (IS_FULL) 5 else 3))
+NLAMBDA <- as.integer(Sys.getenv("SGLWQS_NLAMBDA", if (IS_FULL) 25 else 8))
+
+groups <- review_groups()
+exposures <- review_exposures(groups)
+output_dir <- file.path(repo_root, "analysis", "outputs")
+dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
+```
+
+# Configuration
+
+```{r configuration}
+config <- data.frame(
+  item = c("run_mode", "sglwqs_source", "workers", "n", "seeds",
+           "bootstrap_iterations_for_WQS_methods", "nfolds", "nlambda"),
+  value = c(RUN_MODE, sglwqs_source$source, N_WORKERS, N, N_SEEDS,
+            N_BOOT, NFOLDS, NLAMBDA)
+)
+knitr::kable(config, caption = "Analysis configuration") %>%
+  kableExtra::kable_styling(full_width = FALSE)
+```
+
+The outcome is generated from quantized exposures, so the common target is the
+link-scale contrast for increasing every exposure by one quantile. qgcomp targets
+this contrast most directly. gWQS, groupWQS, and SGL-WQS estimate index-based
+contrasts; for comparability here we compute the implied all-exposure contrast
+from their fitted downstream index coefficients and weights. These rows are
+therefore annotated as index-implied approximations.
+
+# Simulation grid
+
+```{r grid}
+grid <- data.frame(
+  seed = review_seeds(N_SEEDS),
+  row_id = seq_len(N_SEEDS)
+)
+
+knitr::kable(grid, caption = "Seeds") %>%
+  kableExtra::kable_styling(full_width = FALSE)
+```
+
+# Method runners
+
+```{r runners}
+normal_row <- function(method, seed, true_target, estimate, se,
+                       estimand_note, ok = TRUE, error = NA_character_) {
+  ci_lower <- estimate - stats::qnorm(0.975) * se
+  ci_upper <- estimate + stats::qnorm(0.975) * se
+  data.frame(
+    method = method,
+    seed = seed,
+    true_target = true_target,
+    estimate = estimate,
+    std_error = se,
+    ci_lower = ci_lower,
+    ci_upper = ci_upper,
+    covered = ci_lower <= true_target & ci_upper >= true_target,
+    ok = ok,
+    error = error,
+    estimand_note = estimand_note,
+    stringsAsFactors = FALSE
+  )
+}
+
+error_row <- function(method, seed, true_target, error, estimand_note) {
+  data.frame(
+    method = method,
+    seed = seed,
+    true_target = true_target,
+    estimate = NA_real_,
+    std_error = NA_real_,
+    ci_lower = NA_real_,
+    ci_upper = NA_real_,
+    covered = NA,
+    ok = FALSE,
+    error = error,
+    estimand_note = estimand_note,
+    stringsAsFactors = FALSE
+  )
+}
+
+run_qgcomp_effect <- function(dat, seed, true_target) {
+  form <- stats::as.formula(
+    paste("Y ~", paste(exposures, collapse = " + "), "+ sex + age + bmi")
+  )
+  tryCatch({
+    fit <- qgcomp::qgcomp.glm.noboot(
+      form, expnms = exposures, data = dat, family = gaussian(), q = 4
+    )
+    normal_row(
+      method = "qgcomp",
+      seed = seed,
+      true_target = true_target,
+      estimate = as.numeric(fit$psi),
+      se = sqrt(as.numeric(fit$var.psi)),
+      estimand_note = "Direct all-exposure one-quantile contrast"
+    )
+  }, error = function(e) {
+    error_row("qgcomp", seed, true_target, conditionMessage(e),
+              "Direct all-exposure one-quantile contrast")
+  })
+}
+
+run_gwqs_effect <- function(dat, seed, true_target) {
+  tryCatch({
+    fit <- gWQS::gwqs(
+      Y ~ pwqs + nwqs + sex + age + bmi,
+      mix_name = exposures,
+      data = dat,
+      q = 4,
+      validation = 0.4,
+      b = N_BOOT,
+      b1_pos = TRUE,
+      rh = 1,
+      family = "gaussian",
+      seed = seed,
+      plan_strategy = "sequential"
+    )
+    co <- stats::coef(fit$fit)
+    vc <- stats::vcov(fit$fit)
+    terms <- intersect(c("pwqs", "nwqs"), names(co))
+    estimate <- sum(co[terms])
+    se <- sqrt(sum(vc[terms, terms, drop = FALSE]))
+    normal_row(
+      method = "gWQS",
+      seed = seed,
+      true_target = true_target,
+      estimate = as.numeric(estimate),
+      se = as.numeric(se),
+      estimand_note = "Two-index WQS implied all-exposure contrast"
+    )
+  }, error = function(e) {
+    error_row("gWQS", seed, true_target, conditionMessage(e),
+              "Two-index WQS implied all-exposure contrast")
+  })
+}
+
+run_groupwqs_effect <- function(dat, seed, true_target) {
+  tryCatch({
+    group_list <- unname(groups)
+    X_gw <- groupWQS::make.X(dat, num.groups = length(group_list), groups = group_list)
+    x_s <- groupWQS::make.x.s(dat, num.groups = length(group_list), groups = group_list)
+    set.seed(seed)
+    train_idx <- sample(seq_len(nrow(dat)), size = round(nrow(dat) * 0.6))
+    valid_idx <- setdiff(seq_len(nrow(dat)), train_idx)
+    fit <- groupWQS::gwqs.fit(
+      y = dat$Y[valid_idx],
+      y.train = dat$Y[train_idx],
+      x = X_gw[valid_idx, , drop = FALSE],
+      x.train = X_gw[train_idx, , drop = FALSE],
+      x.s = x_s,
+      B = N_BOOT,
+      n.quantiles = 4,
+      func = "continuous"
+    )
+    co <- stats::coef(fit$fit)
+    vc <- stats::vcov(fit$fit)
+    terms <- grep("^GWQS", names(co), value = TRUE)
+    estimate <- sum(co[terms])
+    se <- sqrt(sum(vc[terms, terms, drop = FALSE]))
+    normal_row(
+      method = "groupWQS",
+      seed = seed,
+      true_target = true_target,
+      estimate = as.numeric(estimate),
+      se = as.numeric(se),
+      estimand_note = "Group-index implied all-exposure contrast"
+    )
+  }, error = function(e) {
+    error_row("groupWQS", seed, true_target, conditionMessage(e),
+              "Group-index implied all-exposure contrast")
+  })
+}
+
+run_sglwqs_effect <- function(dat, seed, true_target) {
+  fit_res <- safe_sglwqs(
+    data = dat,
+    exposures = exposures,
+    groups = groups,
+    family = "gaussian",
+    covariates = c("sex", "age", "bmi"),
+    validation = TRUE,
+    bootstrap = FALSE,
+    seed = seed,
+    nfolds = NFOLDS,
+    nlambda = NLAMBDA,
+    minor_threshold = 0.10,
+    verbose = FALSE
+  )
+  if (!isTRUE(fit_res$ok)) {
+    return(error_row("SGL-WQS", seed, true_target, fit_res$error,
+                     "Sparse group index-implied all-exposure contrast"))
+  }
+  fit <- fit_res$fit
+  vals <- lapply(names(groups), function(grp) {
+    gv <- fit$validation_info$group_results[[grp]]
+    pos_mass <- fit$pos_index_sum_by_group[[grp]] %||% 0
+    neg_mass <- fit$neg_index_sum_by_group[[grp]] %||% 0
+    data.frame(
+      estimate_part = c(gv$pos_estimate * pos_mass, gv$neg_estimate * neg_mass),
+      se_part = c(gv$pos_se * pos_mass, gv$neg_se * neg_mass)
+    )
+  })
+  parts <- dplyr::bind_rows(vals)
+  estimate <- sum(parts$estimate_part, na.rm = TRUE)
+  se <- sqrt(sum(parts$se_part^2, na.rm = TRUE))
+  normal_row(
+    method = "SGL-WQS",
+    seed = seed,
+    true_target = true_target,
+    estimate = estimate,
+    se = se,
+    estimand_note = "Sparse group index-implied all-exposure contrast"
+  )
+}
+```
+
+# Run analysis
+
+```{r run-analysis}
+run_one_seed <- function(row) {
+  load_review_sglwqs(root = repo_root)
+  dat <- simulate_quantile_estimand_data(
+    n = N,
+    seed = row$seed,
+    correlation = 0.5,
+    noise_sd = 2.5
+  )
+  true_target <- attr(dat, "true_all_exposure_contrast")
+  dplyr::bind_rows(
+    run_qgcomp_effect(dat, row$seed, true_target),
+    run_gwqs_effect(dat, row$seed + 1000L, true_target),
+    run_groupwqs_effect(dat, row$seed + 2000L, true_target),
+    run_sglwqs_effect(dat, row$seed + 3000L, true_target)
+  )
+}
+
+effect_results <- dplyr::bind_rows(
+  review_lapply(split(seq_len(nrow(grid)), seq_len(nrow(grid))), function(i) {
+    run_one_seed(grid[i, , drop = FALSE])
+  }, workers = if (IS_FULL) N_WORKERS else 1L)
+)
+
+effect_results$error_class <- vapply(effect_results$error, classification_from_error, character(1))
+
+if (requireNamespace("readr", quietly = TRUE)) {
+  readr::write_csv(effect_results,
+                   file.path(output_dir, "effect_estimate_bias_coverage.csv"))
+} else {
+  utils::write.csv(effect_results,
+                   file.path(output_dir, "effect_estimate_bias_coverage.csv"),
+                   row.names = FALSE)
+}
+```
+
+# Bias, RMSE, and coverage
+
+```{r performance}
+failure_summary <- effect_results %>%
+  dplyr::group_by(method) %>%
+  dplyr::summarise(
+    attempted = dplyr::n(),
+    succeeded = sum(ok),
+    failed = attempted - succeeded,
+    failure_rate = failed / attempted,
+    .groups = "drop"
+  )
+
+knitr::kable(
+  failure_summary %>%
+    dplyr::mutate(failure_rate = sprintf("%.1f%%", 100 * failure_rate)),
+  caption = "Effect-estimate run success/failure counts"
+) %>%
+  kableExtra::kable_styling(full_width = FALSE)
+
+performance <- effect_results %>%
+  dplyr::filter(ok, is.finite(estimate), is.finite(std_error)) %>%
+  dplyr::mutate(
+    bias = estimate - true_target,
+    squared_error = bias^2
+  ) %>%
+  dplyr::group_by(method, estimand_note) %>%
+  dplyr::summarise(
+    n_success = dplyr::n(),
+    true_target = mean(true_target),
+    mean_estimate = mean(estimate),
+    bias = mean(bias),
+    rmse = sqrt(mean(squared_error)),
+    mean_se = mean(std_error),
+    coverage_95 = mean(covered, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+knitr::kable(
+  performance %>%
+    dplyr::mutate(dplyr::across(
+      c(true_target, mean_estimate, bias, rmse, mean_se, coverage_95),
+      ~ round(.x, 3)
+    )),
+  caption = "Bias, RMSE, and 95% CI coverage for the common contrast"
+) %>%
+  kableExtra::kable_styling(full_width = FALSE)
+```
+
+```{r estimate-plot}
+plot_df <- effect_results %>% dplyr::filter(ok, is.finite(estimate))
+if (nrow(plot_df) > 0L) {
+  ggplot(plot_df, aes(x = method, y = estimate, fill = method)) +
+    geom_hline(aes(yintercept = true_target), linetype = "dashed", color = "grey35") +
+    geom_boxplot(outlier.shape = NA, alpha = 0.7) +
+    geom_point(position = position_jitter(width = 0.08), size = 1.7, alpha = 0.8) +
+    labs(x = NULL, y = "Estimated all-exposure contrast",
+         title = "Distribution of method-specific contrast estimates") +
+    theme_minimal() +
+    theme(legend.position = "none")
+}
+```
+
+```{r coverage-plot}
+if (nrow(performance) > 0L) {
+  ggplot(performance, aes(x = method, y = coverage_95, fill = method)) +
+    geom_col(width = 0.65) +
+    geom_hline(yintercept = 0.95, linetype = "dashed", color = "firebrick") +
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 1)) +
+    labs(x = NULL, y = "95% CI coverage",
+         title = "Coverage for the common contrast") +
+    theme_minimal() +
+    theme(legend.position = "none")
+}
+```
+
+# Estimand notes
+
+```{r notes}
+notes <- effect_results %>%
+  dplyr::distinct(method, estimand_note) %>%
+  dplyr::arrange(method)
+
+knitr::kable(notes, caption = "Estimand notes") %>%
+  kableExtra::kable_styling(full_width = FALSE)
+```
+
+# Session information
+
+```{r session-info}
+sessionInfo()
+```

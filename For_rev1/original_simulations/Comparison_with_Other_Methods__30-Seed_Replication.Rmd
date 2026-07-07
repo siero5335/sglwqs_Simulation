@@ -1,0 +1,1518 @@
+---
+title: "Comparison with Other Methods (30-Seed Replication)"
+subtitle: "SGL-WQS vs WQS vs qgcomp vs groupWQS"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = TRUE,
+  fig.width = 10,
+  fig.height = 7,
+  out.width = "100%",
+  dpi = 150,
+  cache = TRUE,
+  warning = FALSE
+)
+
+# Publication figure output directory
+fig_dir <- "figures"
+dir.create(fig_dir, showWarnings = FALSE, recursive = TRUE)
+```
+
+```{r params}
+N_BOOT <- 200
+N_QUANTILES <- 4
+SPLIT_SEED <- 123
+SEEDS <- c(71, 42, 123, 256, 314, 500, 617, 789, 888, 999,
+              1001, 1123, 1234, 1357, 1500, 1618, 1729, 1847, 1963, 2048,
+              2222, 2345, 2500, 2718, 2801, 3001, 3141, 3333, 3500, 3777)
+N_SEEDS <- length(SEEDS)
+```
+
+# Overview
+
+This vignette compares SGL-WQS with established mixture methods using **each package's own demo dataset**, replicated across **`r N_SEEDS` independent seeds** to assess stability.
+
+| Method | Bidirectional | Variable Selection | Group Structure |
+|--------|---------------|-------------------|-----------------|
+| WQS (gWQS) | Yes (2-index) | No | No |
+| qgcomp | Yes | No | No |
+| groupWQS | Yes | No | Yes |
+| **SGL-WQS** | Yes | **Yes** | **Yes** |
+
+**Common settings**: Bootstrap = `r N_BOOT`, Validation split = 60/40
+
+| Comparison | Data | Package | Variables | Outcome | Family |
+|:---:|:---|:---|:---:|:---|:---|
+| 1 | wqs_data | gWQS | 34 PCBs | yLBX | gaussian |
+| 2 | metals | qgcomp | 15 metals | y | gaussian |
+| 3 | simdata | groupWQS | 14 (3 groups) | Y | binomial |
+| 4 | tiwqs_data | gWQS | 38 nutrients (4 groups) | bmxbmi | gaussian |
+
+---
+
+## Load Packages
+
+```{r load-packages}
+library(MASS)
+library(qgcomp)
+library(gWQS)
+library(groupWQS)
+library(sglwqs)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(knitr)
+library(kableExtra)
+library(future)
+library(tictoc)
+```
+
+---
+
+# Comparison 1: PCB Data (Continuous Outcome)
+
+**Data**: `gWQS::wqs_data` — 34 PCB congeners, continuous outcome (yLBX)
+
+```{r comp1-data}
+data("wqs_data", package = "gWQS")
+PCBs <- names(wqs_data)[grepl("^LBX", names(wqs_data))]
+cat("Number of exposures:", length(PCBs), "\n")
+cat("Sample size:", nrow(wqs_data), "\n")
+```
+
+```{r comp1-run, cache=TRUE}
+tic("Comparison 1")
+
+comp1_weights <- data.frame()
+comp1_group_info <- data.frame()
+
+# qgcomp (deterministic — run once)
+qc1_formula <- as.formula(paste("yLBX ~", paste(PCBs, collapse = " + ")))
+qc1 <- qgcomp.glm.noboot(qc1_formula, expnms = PCBs,
+                           data = wqs_data, family = gaussian(), q = N_QUANTILES)
+
+qc1_w <- data.frame(
+  Variable = c(names(qc1$pos.weights), names(qc1$neg.weights)),
+  Weight = c(qc1$pos.weights, qc1$neg.weights),
+  Direction = c(rep("Positive", length(qc1$pos.weights)),
+                rep("Negative", length(qc1$neg.weights))),
+  Method = "qgcomp", Seed = NA
+)
+
+for (s in seq_along(SEEDS)) {
+  seed <- SEEDS[s]
+  cat(sprintf("  Comp1 Seed %d/%d...\n", s, N_SEEDS))
+
+  tryCatch({
+  # gWQS
+  gwqs1 <- gwqs(yLBX ~ pwqs + nwqs, mix_name = PCBs, data = wqs_data,
+                q = N_QUANTILES, validation = 0.4, b = N_BOOT,
+                b1_pos = TRUE, rh = 1, family = "gaussian", seed = seed,
+                plan_strategy = "multisession")
+
+  fw1 <- gwqs1$final_weights
+  w_pos <- if ("mean_weight_p" %in% names(fw1)) fw1$mean_weight_p else NULL
+  w_neg <- if ("mean_weight_n" %in% names(fw1)) fw1$mean_weight_n else NULL
+  if (!is.null(w_pos))
+    comp1_weights <- rbind(comp1_weights, data.frame(
+      Variable = fw1$mix_name, Weight = as.numeric(w_pos),
+      Direction = "Positive", Method = "gWQS", Seed = seed))
+  if (!is.null(w_neg))
+    comp1_weights <- rbind(comp1_weights, data.frame(
+      Variable = fw1$mix_name, Weight = as.numeric(w_neg),
+      Direction = "Negative", Method = "gWQS", Seed = seed))
+
+  # groupWQS
+  group_list1 <- list(PCBs)
+  X_gw1 <- make.X(wqs_data, num.groups = 1, groups = group_list1)
+  x.s1 <- make.x.s(wqs_data, num.groups = 1, groups = group_list1)
+  n1 <- nrow(wqs_data); n_tr1 <- round(n1 * 0.6)
+  set.seed(seed)
+  train_idx1 <- sample(seq_len(n1), size = n_tr1)
+  valid_idx1 <- setdiff(seq_len(n1), train_idx1)
+
+  groupwqs1 <- gwqs.fit(
+    y = wqs_data$yLBX[valid_idx1], y.train = wqs_data$yLBX[train_idx1],
+    x = X_gw1[valid_idx1, , drop = FALSE], x.train = X_gw1[train_idx1, , drop = FALSE],
+    x.s = x.s1, B = N_BOOT, n.quantiles = N_QUANTILES, func = "continuous")
+
+  grp_weights <- groupwqs1$weights[[1]]
+  comp1_weights <- rbind(comp1_weights, data.frame(
+    Variable = names(grp_weights), Weight = as.numeric(grp_weights),
+    Direction = "Combined", Method = "groupWQS", Seed = seed))
+
+  # SGL-WQS
+  plan(multisession, workers = 8)
+  sgl1 <- sglwqs(X = wqs_data[, PCBs], y = wqs_data$yLBX,
+                  groups = list(PCBs = PCBs), family = "gaussian",
+                  n_quantiles = N_QUANTILES, bootstrap = TRUE, n_boot = N_BOOT,
+                  parallel = TRUE, validation = TRUE, train_prop = 0.6, seed = seed)
+  plan(sequential)
+
+  sgl_w1 <- extract_weights(sgl1, direction = "both") %>%
+    dplyr::select(Variable = variable, Weight = weight, Direction = direction) %>%
+    mutate(Direction = tools::toTitleCase(Direction), Method = "SGL-WQS", Seed = seed)
+  comp1_weights <- rbind(comp1_weights, sgl_w1)
+
+  # Collect group-level info (single group: PCBs)
+  for (grp_name in names(sgl1$pos_index_sum_by_group)) {
+    pos_idx <- sgl1$pos_index_sum_by_group[[grp_name]]
+    neg_idx <- sgl1$neg_index_sum_by_group[[grp_name]]
+    selected <- (!is.null(pos_idx) && pos_idx > 1e-6) || (!is.null(neg_idx) && neg_idx > 1e-6)
+    grp_res <- sgl1$validation_info$group_results[[grp_name]]
+    comp1_group_info <- rbind(comp1_group_info, data.frame(
+      Group = grp_name, Seed = seed, Selected = selected,
+      Pos_Index = ifelse(is.null(pos_idx), 0, pos_idx),
+      Neg_Index = ifelse(is.null(neg_idx), 0, neg_idx),
+      Pos_Estimate = if (!is.null(grp_res)) grp_res$pos_estimate else NA,
+      Neg_Estimate = if (!is.null(grp_res)) grp_res$neg_estimate else NA,
+      Pos_Pvalue = if (!is.null(grp_res)) grp_res$pos_pvalue else NA,
+      Neg_Pvalue = if (!is.null(grp_res)) grp_res$neg_pvalue else NA
+    ))
+  }
+  # Fallback: if no group_results, use overall WQS
+  if (nrow(comp1_group_info[comp1_group_info$Seed == seed, ]) == 0) {
+    comp1_group_info <- rbind(comp1_group_info, data.frame(
+      Group = "PCBs", Seed = seed, Selected = TRUE,
+      Pos_Index = sgl1$pos_index_sum, Neg_Index = sgl1$neg_index_sum,
+      Pos_Estimate = sgl1$validation_info$wqs_pos_estimate,
+      Neg_Estimate = sgl1$validation_info$wqs_neg_estimate,
+      Pos_Pvalue = sgl1$validation_info$wqs_pos_pvalue,
+      Neg_Pvalue = sgl1$validation_info$wqs_neg_pvalue
+    ))
+  }
+
+  }, error = function(e) cat("  ERROR:", e$message, "\n"))
+}
+
+# Add qgcomp (replicate for each seed for consistent plotting)
+for (seed in SEEDS) {
+  comp1_weights <- rbind(comp1_weights, qc1_w %>% mutate(Seed = seed))
+}
+
+toc()
+```
+
+```{r comp1-heatmap, fig.height=8, fig.width=10}
+# Heatmap: Mean weight by variable × method × direction (all 34 variables)
+comp1_mean <- comp1_weights %>%
+  group_by(Variable, Method, Direction) %>%
+  summarise(Mean_Weight = mean(Weight, na.rm = TRUE), .groups = "drop")
+
+p_heat1 <- comp1_mean %>%
+  ggplot(aes(x = Method, y = Variable, fill = Mean_Weight)) +
+  geom_tile(color = "white", linewidth = 0.3) +
+  facet_wrap(~Direction) +
+  scale_fill_distiller(palette = "YlOrRd", direction = 1, name = "Mean Weight") +
+  labs(title = paste0("Comparison 1: PCB Data — Mean Weights (", N_SEEDS, " seeds)"),
+       subtitle = "Data: gWQS::wqs_data (n = 500, 34 PCBs), Outcome: yLBX. groupWQS = Combined.",
+       x = NULL, y = NULL) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 8))
+print(p_heat1)
+
+ggsave(file.path(fig_dir, "Fig_comp1_pcb_heatmap.pdf"), p_heat1,
+       width = 220, height = 240, units = "mm", dpi = 300)
+ggsave(file.path(fig_dir, "Fig_comp1_pcb_heatmap.tiff"), p_heat1,
+       width = 220, height = 240, units = "mm", dpi = 300, compression = "lzw")
+```
+
+```{r comp1-violin-top10, fig.height=8, fig.width=12}
+# Violin: Top 10 variables by mean weight for readability
+top_vars1 <- comp1_weights %>%
+  filter(Direction %in% c("Positive", "Combined")) %>%
+  group_by(Variable) %>%
+  summarise(mean_w = mean(Weight, na.rm = TRUE), .groups = "drop") %>%
+  arrange(desc(mean_w)) %>%
+  slice_head(n = 10) %>%
+  pull(Variable)
+
+p_vio1 <- comp1_weights %>%
+  filter(Variable %in% top_vars1, Direction %in% c("Positive", "Combined")) %>%
+  ggplot(aes(x = Variable, y = Weight, fill = Method)) +
+  geom_violin(alpha = 0.3, position = position_dodge(width = 0.75), trim = FALSE) +
+  geom_point(aes(color = Method), size = 0.8, alpha = 0.5,
+             position = position_jitterdodge(jitter.width = 0.08, dodge.width = 0.75)) +
+  scale_fill_brewer(palette = "Set1") +
+  scale_color_brewer(palette = "Set1") +
+  labs(title = paste0("Comparison 1: PCB Positive/Combined Weights — Top 10 (", N_SEEDS, " seeds)"),
+       subtitle = "Data: gWQS::wqs_data, Outcome: yLBX, Family: gaussian",
+       x = NULL, y = "Weight") +
+  theme_bw(base_size = 14) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
+print(p_vio1)
+
+ggsave(file.path(fig_dir, "Fig_comp1_pcb_weights.pdf"), p_vio1,
+       width = 250, height = 140, units = "mm", dpi = 300)
+ggsave(file.path(fig_dir, "Fig_comp1_pcb_weights.tiff"), p_vio1,
+       width = 250, height = 140, units = "mm", dpi = 300, compression = "lzw")
+```
+
+---
+
+# Comparison 2: Metals Data (Continuous Outcome)
+
+**Data**: `qgcomp::metals` — 15 metals from NHANES, continuous outcome (y)
+
+```{r comp2-data}
+data("metals", package = "qgcomp")
+
+Xnm <- c('arsenic', 'barium', 'cadmium', 'calcium', 'chromium', 'copper',
+         'iron', 'lead', 'magnesium', 'manganese', 'mercury', 'selenium',
+         'silver', 'sodium', 'zinc')
+
+cat("Number of exposures:", length(Xnm), "\n")
+cat("Sample size:", nrow(metals), "\n")
+cat("Outcome prevalence:", mean(metals$y), "\n")
+```
+
+```{r comp2-run, cache=TRUE}
+tic("Comparison 2")
+
+comp2_weights <- data.frame()
+comp2_group_info <- data.frame()
+
+# qgcomp (deterministic)
+qc2 <- qgcomp.glm.noboot(y ~ ., expnms = Xnm,
+                           data = metals[, c(Xnm, 'y')],
+                           family = gaussian(), q = N_QUANTILES)
+
+qc2_w <- data.frame(
+  Variable = c(names(qc2$pos.weights), names(qc2$neg.weights)),
+  Weight = c(qc2$pos.weights, qc2$neg.weights),
+  Direction = c(rep("Positive", length(qc2$pos.weights)),
+                rep("Negative", length(qc2$neg.weights))),
+  Method = "qgcomp", Seed = NA
+)
+
+for (s in seq_along(SEEDS)) {
+  seed <- SEEDS[s]
+  cat(sprintf("  Comp2 Seed %d/%d...\n", s, N_SEEDS))
+
+  tryCatch({
+  # gWQS
+  gwqs2 <- gwqs(y ~ pwqs + nwqs, mix_name = Xnm, data = metals,
+                q = N_QUANTILES, validation = 0.4, b = N_BOOT,
+                b1_pos = TRUE, rh = 1, family = "gaussian", seed = seed,
+                plan_strategy = "multisession")
+
+  fw2 <- gwqs2$final_weights
+  w_pos <- if ("mean_weight_p" %in% names(fw2)) fw2$mean_weight_p else NULL
+  w_neg <- if ("mean_weight_n" %in% names(fw2)) fw2$mean_weight_n else NULL
+  if (!is.null(w_pos))
+    comp2_weights <- rbind(comp2_weights, data.frame(
+      Variable = fw2$mix_name, Weight = as.numeric(w_pos),
+      Direction = "Positive", Method = "gWQS", Seed = seed))
+  if (!is.null(w_neg))
+    comp2_weights <- rbind(comp2_weights, data.frame(
+      Variable = fw2$mix_name, Weight = as.numeric(w_neg),
+      Direction = "Negative", Method = "gWQS", Seed = seed))
+
+  # groupWQS
+  group_list2 <- list(Xnm)
+  X_gw2 <- make.X(metals, num.groups = 1, groups = group_list2)
+  x.s2 <- make.x.s(metals, num.groups = 1, groups = group_list2)
+  n2 <- nrow(metals); n_tr2 <- round(n2 * 0.6)
+  set.seed(seed)
+  train_idx2 <- sample(seq_len(n2), size = n_tr2)
+  valid_idx2 <- setdiff(seq_len(n2), train_idx2)
+
+  groupwqs2 <- gwqs.fit(
+    y = metals$y[valid_idx2], y.train = metals$y[train_idx2],
+    x = X_gw2[valid_idx2, , drop = FALSE], x.train = X_gw2[train_idx2, , drop = FALSE],
+    x.s = x.s2, B = N_BOOT, n.quantiles = N_QUANTILES, func = "continuous")
+
+  grp_w2 <- groupwqs2$weights[[1]]
+  comp2_weights <- rbind(comp2_weights, data.frame(
+    Variable = names(grp_w2), Weight = as.numeric(grp_w2),
+    Direction = "Combined", Method = "groupWQS", Seed = seed))
+
+  # SGL-WQS
+  plan(multisession, workers = 8)
+  sgl2 <- sglwqs(X = metals[, Xnm], y = metals$y,
+                  groups = list(Metals = Xnm), family = "gaussian",
+                  n_quantiles = N_QUANTILES, bootstrap = TRUE, n_boot = N_BOOT,
+                  parallel = TRUE, validation = TRUE, train_prop = 0.6, seed = seed)
+  plan(sequential)
+
+  sgl_w2 <- extract_weights(sgl2, direction = "both") %>%
+    dplyr::select(Variable = variable, Weight = weight, Direction = direction) %>%
+    mutate(Direction = tools::toTitleCase(Direction), Method = "SGL-WQS", Seed = seed)
+  comp2_weights <- rbind(comp2_weights, sgl_w2)
+
+  # Collect group-level info (single group: Metals)
+  for (grp_name in names(sgl2$pos_index_sum_by_group)) {
+    pos_idx <- sgl2$pos_index_sum_by_group[[grp_name]]
+    neg_idx <- sgl2$neg_index_sum_by_group[[grp_name]]
+    selected <- (!is.null(pos_idx) && pos_idx > 1e-6) || (!is.null(neg_idx) && neg_idx > 1e-6)
+    grp_res <- sgl2$validation_info$group_results[[grp_name]]
+    comp2_group_info <- rbind(comp2_group_info, data.frame(
+      Group = grp_name, Seed = seed, Selected = selected,
+      Pos_Index = ifelse(is.null(pos_idx), 0, pos_idx),
+      Neg_Index = ifelse(is.null(neg_idx), 0, neg_idx),
+      Pos_Estimate = if (!is.null(grp_res)) grp_res$pos_estimate else NA,
+      Neg_Estimate = if (!is.null(grp_res)) grp_res$neg_estimate else NA,
+      Pos_Pvalue = if (!is.null(grp_res)) grp_res$pos_pvalue else NA,
+      Neg_Pvalue = if (!is.null(grp_res)) grp_res$neg_pvalue else NA
+    ))
+  }
+  if (nrow(comp2_group_info[comp2_group_info$Seed == seed, ]) == 0) {
+    comp2_group_info <- rbind(comp2_group_info, data.frame(
+      Group = "Metals", Seed = seed, Selected = TRUE,
+      Pos_Index = sgl2$pos_index_sum, Neg_Index = sgl2$neg_index_sum,
+      Pos_Estimate = sgl2$validation_info$wqs_pos_estimate,
+      Neg_Estimate = sgl2$validation_info$wqs_neg_estimate,
+      Pos_Pvalue = sgl2$validation_info$wqs_pos_pvalue,
+      Neg_Pvalue = sgl2$validation_info$wqs_neg_pvalue
+    ))
+  }
+
+  }, error = function(e) cat("  ERROR:", e$message, "\n"))
+}
+
+for (seed in SEEDS) {
+  comp2_weights <- rbind(comp2_weights, qc2_w %>% mutate(Seed = seed))
+}
+
+toc()
+```
+
+```{r comp2-butterfly, fig.height=10, fig.width=14}
+# Faceted bar chart by Direction — includes all methods (groupWQS = Combined)
+comp2_summary <- comp2_weights %>%
+  group_by(Variable, Method, Direction) %>%
+  summarise(Mean = mean(Weight, na.rm = TRUE),
+            SD = sd(Weight, na.rm = TRUE), .groups = "drop")
+
+p_bf2 <- ggplot(comp2_summary, aes(x = Variable, y = Mean, fill = Method)) +
+  geom_col(position = position_dodge(width = 0.7), width = 0.65, alpha = 0.8) +
+  geom_errorbar(aes(ymin = pmax(Mean - SD, 0), ymax = Mean + SD),
+                position = position_dodge(width = 0.7), width = 0.2, linewidth = 0.3) +
+  coord_flip() +
+  facet_wrap(~Direction, ncol = 3) +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = paste0("Comparison 2: Metals — Weight by Direction (", N_SEEDS, " seeds)"),
+       subtitle = "Data: qgcomp::metals (n = 452), Outcome: y, Family: gaussian\ngroupWQS reports Combined (unsigned) weights only",
+       x = NULL, y = "Mean Weight ± SD") +
+  theme_bw(base_size = 14) +
+  theme(legend.position = "bottom")
+print(p_bf2)
+
+ggsave(file.path(fig_dir, "Fig_comp2_metals_weights.pdf"), p_bf2,
+       width = 250, height = 180, units = "mm", dpi = 300)
+ggsave(file.path(fig_dir, "Fig_comp2_metals_weights.tiff"), p_bf2,
+       width = 250, height = 180, units = "mm", dpi = 300, compression = "lzw")
+```
+
+```{r comp2-violin, fig.height=8, fig.width=14}
+# Violin for Negative direction (where most signals are)
+p_vio2 <- comp2_weights %>%
+  filter(Direction %in% c("Negative", "Combined")) %>%
+  ggplot(aes(x = Variable, y = Weight, fill = Method)) +
+  geom_violin(alpha = 0.3, position = position_dodge(width = 0.75), trim = FALSE) +
+  geom_point(aes(color = Method), size = 0.8, alpha = 0.5,
+             position = position_jitterdodge(jitter.width = 0.08, dodge.width = 0.75)) +
+  scale_fill_brewer(palette = "Set1") +
+  scale_color_brewer(palette = "Set1") +
+  labs(title = paste0("Comparison 2: Metals Negative/Combined Weights (", N_SEEDS, " seeds)"),
+       subtitle = "Data: qgcomp::metals, Outcome: y. groupWQS = Combined direction.",
+       x = NULL, y = "Weight") +
+  theme_bw(base_size = 14) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
+print(p_vio2)
+
+ggsave(file.path(fig_dir, "Fig_comp2_metals_neg_violin.pdf"), p_vio2,
+       width = 250, height = 140, units = "mm", dpi = 300)
+ggsave(file.path(fig_dir, "Fig_comp2_metals_neg_violin.tiff"), p_vio2,
+       width = 250, height = 140, units = "mm", dpi = 300, compression = "lzw")
+```
+
+---
+
+# Comparison 3: Multiple Groups Data (Binary Outcome)
+
+**Data**: `groupWQS::simdata` — 5 PCBs + 4 metals + 5 pesticides, binary outcome (Y)
+
+```{r comp3-data}
+data("simdata", package = "groupWQS")
+
+PCBs_g <- c("pcb_118", "pcb_138", "pcb_153", "pcb_180", "pcb_192")
+metals_g <- c("as", "cu", "pb", "sn")
+pesticides <- c("carbaryl", "propoxur", "methoxychlor", "diazinon", "chlorpyrifos")
+
+all_vars_g <- c(PCBs_g, metals_g, pesticides)
+group_info3 <- list(PCBs = PCBs_g, Metals = metals_g, Pesticides = pesticides)
+
+cat("Number of exposures:", length(all_vars_g), "\n")
+cat("  PCBs:", length(PCBs_g), "\n")
+cat("  Metals:", length(metals_g), "\n")
+cat("  Pesticides:", length(pesticides), "\n")
+cat("Sample size:", nrow(simdata), "\n")
+cat("Outcome prevalence:", mean(simdata$Y), "\n")
+```
+
+```{r comp3-run, cache=TRUE}
+tic("Comparison 3")
+
+comp3_weights <- data.frame()
+comp3_group_info <- data.frame()
+
+# qgcomp (deterministic)
+qc3_formula <- as.formula(paste("Y ~", paste(all_vars_g, collapse = " + ")))
+qc3 <- qgcomp.glm.noboot(qc3_formula, expnms = all_vars_g,
+                           data = simdata, family = binomial(), q = 4)
+
+qc3_w <- data.frame(
+  Variable = c(names(qc3$pos.weights), names(qc3$neg.weights)),
+  Weight = c(qc3$pos.weights, qc3$neg.weights),
+  Direction = c(rep("Positive", length(qc3$pos.weights)),
+                rep("Negative", length(qc3$neg.weights))),
+  Method = "qgcomp", Seed = NA
+)
+
+for (s in seq_along(SEEDS)) {
+  seed <- SEEDS[s]
+  cat(sprintf("  Comp3 Seed %d/%d...\n", s, N_SEEDS))
+
+  tryCatch({
+  # gWQS
+  gwqs3 <- gwqs(Y ~ pwqs + nwqs, mix_name = all_vars_g, data = simdata,
+                q = 4, validation = 0.4, b = N_BOOT,
+                b1_pos = TRUE, rh = 1, family = "binomial", seed = seed,
+                plan_strategy = "multisession")
+
+  fw3 <- gwqs3$final_weights
+  w_pos <- if ("mean_weight_p" %in% names(fw3)) fw3$mean_weight_p else NULL
+  w_neg <- if ("mean_weight_n" %in% names(fw3)) fw3$mean_weight_n else NULL
+  if (!is.null(w_pos))
+    comp3_weights <- rbind(comp3_weights, data.frame(
+      Variable = fw3$mix_name, Weight = as.numeric(w_pos),
+      Direction = "Positive", Method = "gWQS", Seed = seed))
+  if (!is.null(w_neg))
+    comp3_weights <- rbind(comp3_weights, data.frame(
+      Variable = fw3$mix_name, Weight = as.numeric(w_neg),
+      Direction = "Negative", Method = "gWQS", Seed = seed))
+
+  # groupWQS (stratified split for binary outcome)
+  group_list3 <- list(PCBs_g, metals_g, pesticides)
+  X_gw3 <- make.X(simdata, num.groups = 3, groups = group_list3)
+  x.s3 <- make.x.s(simdata, num.groups = 3, groups = group_list3)
+  n3 <- nrow(simdata)
+
+  set.seed(seed)
+  idx_case3 <- which(simdata$Y == 1)
+  idx_ctrl3 <- which(simdata$Y == 0)
+  train_idx3 <- c(
+    sample(idx_case3, size = round(length(idx_case3) * 0.6)),
+    sample(idx_ctrl3, size = round(length(idx_ctrl3) * 0.6))
+  )
+  valid_idx3 <- setdiff(seq_len(n3), train_idx3)
+
+  groupwqs3 <- gwqs.fit(
+    y = simdata$Y[valid_idx3], y.train = simdata$Y[train_idx3],
+    x = X_gw3[valid_idx3, , drop = FALSE], x.train = X_gw3[train_idx3, , drop = FALSE],
+    x.s = x.s3, B = N_BOOT, n.quantiles = 4, func = "binary")
+
+  for (i in seq_along(groupwqs3$weights)) {
+    grp_w3 <- groupwqs3$weights[[i]]
+    comp3_weights <- rbind(comp3_weights, data.frame(
+      Variable = names(grp_w3), Weight = as.numeric(grp_w3),
+      Direction = "Combined", Method = "groupWQS", Seed = seed))
+  }
+
+  # SGL-WQS
+  plan(multisession, workers = 8)
+  sgl3 <- sglwqs(X = simdata[, all_vars_g], y = simdata$Y,
+                  family = "binomial",
+                  groups = list(PCBs = PCBs_g, Metals = metals_g, Pesticides = pesticides),
+                  n_quantiles = 4, bootstrap = TRUE, n_boot = N_BOOT,
+                  parallel = TRUE, validation = TRUE, train_prop = 0.6, seed = seed)
+  plan(sequential)
+
+  sgl_w3 <- extract_weights(sgl3, direction = "both") %>%
+    dplyr::select(Variable = variable, Weight = weight, Direction = direction) %>%
+    mutate(Direction = tools::toTitleCase(Direction), Method = "SGL-WQS", Seed = seed)
+  comp3_weights <- rbind(comp3_weights, sgl_w3)
+
+  # Collect group-level beta and p-values
+  for (grp_name in names(group_info3)) {
+    pos_idx <- sgl3$pos_index_sum_by_group[[grp_name]]
+    neg_idx <- sgl3$neg_index_sum_by_group[[grp_name]]
+    # Group is "selected" if it has non-negligible index sum
+    selected <- (!is.null(pos_idx) && pos_idx > 1e-6) || (!is.null(neg_idx) && neg_idx > 1e-6)
+    
+    # Get validation p-values if available
+    grp_res <- sgl3$validation_info$group_results[[grp_name]]
+    pos_est <- if (!is.null(grp_res)) grp_res$pos_estimate else NA
+    neg_est <- if (!is.null(grp_res)) grp_res$neg_estimate else NA
+    pos_p   <- if (!is.null(grp_res)) grp_res$pos_pvalue else NA
+    neg_p   <- if (!is.null(grp_res)) grp_res$neg_pvalue else NA
+    
+    comp3_group_info <- rbind(comp3_group_info, data.frame(
+      Group = grp_name, Seed = seed, Selected = selected,
+      Pos_Index = ifelse(is.null(pos_idx), 0, pos_idx),
+      Neg_Index = ifelse(is.null(neg_idx), 0, neg_idx),
+      Pos_Estimate = pos_est, Neg_Estimate = neg_est,
+      Pos_Pvalue = pos_p, Neg_Pvalue = neg_p
+    ))
+  }
+
+  }, error = function(e) cat("  ERROR:", e$message, "\n"))
+}
+
+for (seed in SEEDS) {
+  comp3_weights <- rbind(comp3_weights, qc3_w %>% mutate(Seed = seed))
+}
+
+# Add group info
+comp3_weights$Group <- ifelse(comp3_weights$Variable %in% PCBs_g, "PCBs",
+                       ifelse(comp3_weights$Variable %in% metals_g, "Metals", "Pesticides"))
+
+toc()
+```
+
+```{r comp3-butterfly, fig.height=12, fig.width=14}
+# Faceted bar chart by Group × Direction — includes all methods
+comp3_summary <- comp3_weights %>%
+  group_by(Variable, Method, Direction, Group) %>%
+  summarise(Mean = mean(Weight, na.rm = TRUE),
+            SD = sd(Weight, na.rm = TRUE), .groups = "drop")
+
+comp3_summary$Group <- factor(comp3_summary$Group, levels = c("PCBs", "Metals", "Pesticides"))
+
+p_bf3 <- ggplot(comp3_summary, aes(x = Variable, y = Mean, fill = Method)) +
+  geom_col(position = position_dodge(width = 0.7), width = 0.65, alpha = 0.8) +
+  geom_errorbar(aes(ymin = pmax(Mean - SD, 0), ymax = Mean + SD),
+                position = position_dodge(width = 0.7), width = 0.2, linewidth = 0.3) +
+  coord_flip() +
+  facet_grid(Group ~ Direction, scales = "free", space = "free_y") +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = paste0("Comparison 3: Multi-Group — Weights by Direction (", N_SEEDS, " seeds)"),
+       subtitle = "Data: groupWQS::simdata (n = 1,000), Outcome: Y, Family: binomial\ngroupWQS reports Combined (unsigned) weights only",
+       x = NULL, y = "Mean Weight ± SD") +
+  theme_bw(base_size = 14) +
+  theme(legend.position = "bottom",
+        strip.background = element_rect(fill = "gray95"),
+        strip.text = element_text(face = "bold"))
+print(p_bf3)
+
+ggsave(file.path(fig_dir, "Fig_comp3_multigroup_weights.pdf"), p_bf3,
+       width = 250, height = 220, units = "mm", dpi = 300)
+ggsave(file.path(fig_dir, "Fig_comp3_multigroup_weights.tiff"), p_bf3,
+       width = 250, height = 220, units = "mm", dpi = 300, compression = "lzw")
+```
+
+```{r comp3-stability, fig.height=8, fig.width=14}
+# Weight CV (coefficient of variation) by method — stability comparison
+comp3_cv <- comp3_weights %>%
+  filter(Direction %in% c("Positive", "Negative", "Combined")) %>%
+  group_by(Variable, Method, Group) %>%
+  summarise(Mean = mean(Weight, na.rm = TRUE),
+            SD = sd(Weight, na.rm = TRUE),
+            CV = ifelse(Mean > 0.01, SD / Mean, NA_real_), .groups = "drop")
+
+comp3_cv$Group <- factor(comp3_cv$Group, levels = c("PCBs", "Metals", "Pesticides"))
+
+p_cv3 <- ggplot(comp3_cv %>% filter(!is.na(CV)),
+                aes(x = Method, y = CV, fill = Method)) +
+  geom_boxplot(alpha = 0.4, outlier.size = 1) +
+  geom_jitter(width = 0.15, size = 1.5, alpha = 0.6) +
+  facet_wrap(~Group) +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = paste0("Comparison 3: Weight Stability (CV) by Method (", N_SEEDS, " seeds)"),
+       subtitle = "Lower CV = more stable weight estimates across seeds",
+       y = "Coefficient of Variation (SD / Mean)") +
+  theme_bw(base_size = 14) +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 30, hjust = 1))
+print(p_cv3)
+
+ggsave(file.path(fig_dir, "Fig_comp3_stability_cv.pdf"), p_cv3,
+       width = 250, height = 130, units = "mm", dpi = 300)
+ggsave(file.path(fig_dir, "Fig_comp3_stability_cv.tiff"), p_cv3,
+       width = 250, height = 130, units = "mm", dpi = 300, compression = "lzw")
+```
+
+---
+
+# Comparison 4: Nutrients Data (NHANES, Continuous Outcome)
+
+**Data**: `gWQS::tiwqs_data` — 38 nutrients, 4 groups (Carotenoids, Vitamins, Minerals, Macro+Stimulants), continuous outcome (bmxbmi), with covariates
+
+```{r comp4-data}
+data("tiwqs_data", package = "gWQS")
+
+# Nutrient (mixture) variables
+nutrients_all <- c(
+  "vara","acar","bcar","cryp","lyco","lz",
+  "vb1","vb2","niac","vb6","fdfe","vb12","b12a","vc","vd","vk",
+  "atoc",
+  "calc","phos","magn","iron","zinc","copp","pota","sodi","sele",
+  "carb","sugar","fiber","prot","mfat","pfat","sfat","chol","chl","alcol",
+  "caff","theo"
+)
+
+nutrients <- nutrients_all[nutrients_all %in% names(tiwqs_data)]
+if (length(setdiff(nutrients_all, nutrients)) > 0) {
+  warning("Some expected nutrient variables were not found in tiwqs_data: ",
+          paste(setdiff(nutrients_all, nutrients), collapse = ", "))
+}
+
+# Outcomes
+outcome_cont4 <- "bmxbmi"
+outcome_bin4  <- "bmi_cat"
+
+# Covariates: everything else
+covars4 <- setdiff(names(tiwqs_data), c(nutrients, outcome_cont4, outcome_bin4))
+
+# Convert factor covariates to numeric to avoid gWQS contrasts errors
+# (tiwqs_data contains factor covariates like race/ethnicity)
+for (cv in covars4) {
+  if (is.factor(tiwqs_data[[cv]]) || is.character(tiwqs_data[[cv]])) {
+    tiwqs_data[[cv]] <- as.numeric(as.factor(tiwqs_data[[cv]]))
+  }
+}
+
+# Group definitions
+carotenoids4 <- intersect(c("acar","bcar","cryp","lyco","lz"), nutrients)
+vitamins4 <- intersect(c("vara","atoc","vb1","vb2","niac","vb6","fdfe","vb12","b12a","vc","vd","vk"), nutrients)
+minerals4 <- intersect(c("calc","phos","magn","iron","zinc","copp","pota","sodi","sele"), nutrients)
+
+# Merge Macronutrients + Stimulants into a single group
+macro_stimulants4 <- setdiff(nutrients, c(carotenoids4, vitamins4, minerals4))
+
+group_info4 <- list(
+  Carotenoids = carotenoids4,
+  Vitamins = vitamins4,
+  Minerals = minerals4,
+  Macro_Stimulants = macro_stimulants4
+)
+
+cat("Number of exposures:", length(nutrients), "\n")
+cat("Sample size:", nrow(tiwqs_data), "\n")
+cat("Number of covariates:", length(covars4), "\n")
+```
+
+```{r comp4-run, cache=TRUE}
+tic("Comparison 4")
+
+comp4_weights         <- data.frame()
+comp4_group_info      <- data.frame()
+comp4_gwqs_coefs      <- data.frame()
+comp4_gwqs_group_info <- data.frame()
+
+# qgcomp (deterministic)
+qc4_formula <- as.formula(
+  paste(outcome_cont4, "~", paste(c(nutrients, covars4), collapse = " + "))
+)
+qc4 <- qgcomp.glm.noboot(qc4_formula, expnms = nutrients,
+                           data = tiwqs_data, family = gaussian(), q = N_QUANTILES)
+
+qc4_w <- data.frame(
+  Variable = c(names(qc4$pos.weights), names(qc4$neg.weights)),
+  Weight = c(qc4$pos.weights, qc4$neg.weights),
+  Direction = c(rep("Positive", length(qc4$pos.weights)),
+                rep("Negative", length(qc4$neg.weights))),
+  Method = "qgcomp", Seed = NA
+)
+
+for (s in seq_along(SEEDS)) {
+  seed <- SEEDS[s]
+  cat(sprintf("  Comp4 Seed %d/%d...\n", s, N_SEEDS))
+
+  tryCatch({
+  # gWQS
+  gwqs_formula4 <- as.formula(
+    paste(outcome_cont4, "~ pwqs + nwqs",
+          if (length(covars4) > 0) paste("+", paste(covars4, collapse = " + ")) else "")
+  )
+
+  gwqs4 <- withCallingHandlers(
+    gwqs(gwqs_formula4, mix_name = nutrients, data = tiwqs_data,
+         q = N_QUANTILES, validation = 0.4, b = N_BOOT,
+         b1_pos = TRUE, rh = 1, family = "gaussian", seed = seed,
+         plan_strategy = "multisession"),
+    warning = function(w) {
+      if (grepl("Using formula\\(x\\) is deprecated|formula\\.character", conditionMessage(w)))
+        invokeRestart("muffleWarning")
+    }
+  )
+
+  fw4 <- gwqs4$final_weights
+  w_pos <- if ("mean_weight_p" %in% names(fw4)) fw4$mean_weight_p else NULL
+  w_neg <- if ("mean_weight_n" %in% names(fw4)) fw4$mean_weight_n else NULL
+  if (!is.null(w_pos))
+    comp4_weights <- rbind(comp4_weights, data.frame(
+      Variable = fw4$mix_name, Weight = as.numeric(w_pos),
+      Direction = "Positive", Method = "gWQS", Seed = seed))
+  if (!is.null(w_neg))
+    comp4_weights <- rbind(comp4_weights, data.frame(
+      Variable = fw4$mix_name, Weight = as.numeric(w_neg),
+      Direction = "Negative", Method = "gWQS", Seed = seed))
+
+  # 追加: gWQS係数を収集
+  gwqs4_coef <- summary(gwqs4$fit)$coefficients
+  comp4_gwqs_coefs <- rbind(comp4_gwqs_coefs, data.frame(
+    Seed    = seed,
+    pwqs    = gwqs4_coef["pwqs", "Estimate"],
+    nwqs    = gwqs4_coef["nwqs", "Estimate"],
+    pwqs_se = gwqs4_coef["pwqs", "Std. Error"],
+    nwqs_se = gwqs4_coef["nwqs", "Std. Error"],
+    pwqs_p  = gwqs4_coef["pwqs", "Pr(>|t|)"],
+    nwqs_p  = gwqs4_coef["nwqs", "Pr(>|t|)"]
+  ))
+
+  # groupWQS
+  group_list4 <- unname(group_info4)
+  X_gw4 <- make.X(tiwqs_data, num.groups = 4, groups = group_list4)
+  x.s4 <- make.x.s(tiwqs_data, num.groups = 4, groups = group_list4)
+
+  z4 <- NULL
+  if (length(covars4) > 0) {
+    z4 <- model.matrix(~ ., data = tiwqs_data[, covars4, drop = FALSE])
+    z4 <- z4[, colnames(z4) != "(Intercept)", drop = FALSE]
+  }
+
+  n4 <- nrow(tiwqs_data); n_tr4 <- round(n4 * 0.6)
+  set.seed(seed)
+  train_idx4 <- sample(seq_len(n4), size = n_tr4)
+  valid_idx4 <- setdiff(seq_len(n4), train_idx4)
+
+  groupwqs4 <- gwqs.fit(
+    y = tiwqs_data[[outcome_cont4]][valid_idx4],
+    y.train = tiwqs_data[[outcome_cont4]][train_idx4],
+    x = X_gw4[valid_idx4, , drop = FALSE], x.train = X_gw4[train_idx4, , drop = FALSE],
+    z = if (!is.null(z4)) z4[valid_idx4, , drop = FALSE] else NULL,
+    z.train = if (!is.null(z4)) z4[train_idx4, , drop = FALSE] else NULL,
+    x.s = x.s4, B = N_BOOT, n.quantiles = N_QUANTILES, func = "continuous")
+
+  for (i in seq_along(groupwqs4$weights)) {
+    grp_w4 <- groupwqs4$weights[[i]]
+    comp4_weights <- rbind(comp4_weights, data.frame(
+      Variable = names(grp_w4), Weight = as.numeric(grp_w4),
+      Direction = "Combined", Method = "groupWQS", Seed = seed))
+  }
+
+  # 追加: groupWQS group-level β を収集
+  grpwqs4_coef <- summary(groupwqs4$fit)$coefficients
+  grp_labels   <- paste0("GWQS", seq_along(group_info4))
+  grp_names    <- names(group_info4)
+  for (k in seq_along(grp_labels)) {
+    lbl <- grp_labels[k]
+    if (lbl %in% rownames(grpwqs4_coef)) {
+      comp4_gwqs_group_info <- rbind(comp4_gwqs_group_info, data.frame(
+        Seed   = seed,
+        Group  = grp_names[k],
+        Beta   = grpwqs4_coef[lbl, "Estimate"],
+        SE     = grpwqs4_coef[lbl, "Std. Error"],
+        Pvalue = grpwqs4_coef[lbl, "Pr(>|t|)"]
+      ))
+    }
+  }
+
+  # SGL-WQS
+  plan(multisession, workers = 8)
+  covars_df4 <- if (length(covars4) > 0) tiwqs_data[, covars4, drop = FALSE] else NULL
+
+  sgl4 <- sglwqs(X = tiwqs_data[, nutrients], y = tiwqs_data[[outcome_cont4]],
+                  covariates = covars_df4, groups = group_info4,
+                  n_quantiles = N_QUANTILES, family = "gaussian",
+                  bootstrap = TRUE, n_boot = N_BOOT,
+                  parallel = TRUE, validation = TRUE, train_prop = 0.6, seed = seed)
+  plan(sequential)
+
+  sgl_w4 <- extract_weights(sgl4, direction = "both") %>%
+    dplyr::select(Variable = variable, Weight = weight, Direction = direction) %>%
+    mutate(Direction = tools::toTitleCase(Direction), Method = "SGL-WQS", Seed = seed)
+  comp4_weights <- rbind(comp4_weights, sgl_w4)
+
+  # Collect group-level beta and p-values
+  for (grp_name in names(group_info4)) {
+    pos_idx <- sgl4$pos_index_sum_by_group[[grp_name]]
+    neg_idx <- sgl4$neg_index_sum_by_group[[grp_name]]
+    selected <- (!is.null(pos_idx) && pos_idx > 1e-6) || (!is.null(neg_idx) && neg_idx > 1e-6)
+
+    grp_res <- sgl4$validation_info$group_results[[grp_name]]
+    pos_est <- if (!is.null(grp_res)) grp_res$pos_estimate else NA
+    neg_est <- if (!is.null(grp_res)) grp_res$neg_estimate else NA
+    pos_p   <- if (!is.null(grp_res)) grp_res$pos_pvalue else NA
+    neg_p   <- if (!is.null(grp_res)) grp_res$neg_pvalue else NA
+
+    comp4_group_info <- rbind(comp4_group_info, data.frame(
+      Group = grp_name, Seed = seed, Selected = selected,
+      Pos_Index = ifelse(is.null(pos_idx), 0, pos_idx),
+      Neg_Index = ifelse(is.null(neg_idx), 0, neg_idx),
+      Pos_Estimate = pos_est, Neg_Estimate = neg_est,
+      Pos_Pvalue = pos_p, Neg_Pvalue = neg_p
+    ))
+  }
+
+  }, error = function(e) cat("  ERROR:", e$message, "\n"))
+}
+
+for (seed in SEEDS) {
+  comp4_weights <- rbind(comp4_weights, qc4_w %>% mutate(Seed = seed))
+}
+
+# Add group info
+comp4_weights$Group <- NA_character_
+for (grp_name in names(group_info4)) {
+  comp4_weights$Group[comp4_weights$Variable %in% group_info4[[grp_name]]] <- grp_name
+}
+
+toc()
+```
+
+```{r comp4-butterfly, fig.height=16, fig.width=16}
+# Faceted bar chart by Group × Direction — includes all methods
+comp4_summary <- comp4_weights %>%
+  filter(!is.na(Group)) %>%
+  group_by(Variable, Method, Direction, Group) %>%
+  summarise(Mean = mean(Weight, na.rm = TRUE),
+            SD = sd(Weight, na.rm = TRUE), .groups = "drop")
+
+comp4_summary$Group <- factor(comp4_summary$Group,
+                               levels = c("Carotenoids", "Vitamins", "Minerals", "Macro_Stimulants"))
+
+p_bf4 <- ggplot(comp4_summary, aes(x = Variable, y = Mean, fill = Method)) +
+  geom_col(position = position_dodge(width = 0.7), width = 0.65, alpha = 0.8) +
+  geom_errorbar(aes(ymin = pmax(Mean - SD, 0), ymax = Mean + SD),
+                position = position_dodge(width = 0.7), width = 0.2, linewidth = 0.3) +
+  coord_flip() +
+  facet_grid(Group ~ Direction, scales = "free", space = "free_y") +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = paste0("Comparison 4: Nutrients — Weights by Direction (", N_SEEDS, " seeds)"),
+       subtitle = "Data: gWQS::tiwqs_data (n = 5,960), Outcome: bmxbmi, Family: gaussian\ngroupWQS reports Combined (unsigned) weights only",
+       x = NULL, y = "Mean Weight ± SD") +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "bottom",
+        strip.background = element_rect(fill = "gray95"),
+        strip.text = element_text(face = "bold"),
+        axis.text.y = element_text(size = 9))
+print(p_bf4)
+
+ggsave(file.path(fig_dir, "Fig_comp4_nutrients_weights.pdf"), p_bf4,
+       width = 280, height = 300, units = "mm", dpi = 300)
+ggsave(file.path(fig_dir, "Fig_comp4_nutrients_weights.tiff"), p_bf4,
+       width = 280, height = 300, units = "mm", dpi = 300, compression = "lzw")
+```
+
+```{r comp4-heatmap, fig.height=14, fig.width=12}
+# Heatmap: Mean weight by variable × method × direction (including Combined)
+comp4_heat <- comp4_weights %>%
+  filter(!is.na(Group)) %>%
+  group_by(Variable, Method, Direction, Group) %>%
+  summarise(Mean_Weight = mean(Weight, na.rm = TRUE), .groups = "drop")
+
+comp4_heat$Group <- factor(comp4_heat$Group,
+                            levels = c("Carotenoids", "Vitamins", "Minerals", "Macro_Stimulants"))
+
+p_heat4 <- ggplot(comp4_heat, aes(x = Method, y = Variable, fill = Mean_Weight)) +
+  geom_tile(color = "white", linewidth = 0.3) +
+  facet_grid(Group ~ Direction, scales = "free_y", space = "free_y") +
+  scale_fill_distiller(palette = "YlOrRd", direction = 1, name = "Mean\nWeight") +
+  labs(title = paste0("Comparison 4: Nutrients — Mean Weight Heatmap (", N_SEEDS, " seeds)"),
+       subtitle = "Data: gWQS::tiwqs_data, Outcome: bmxbmi. Includes Combined (groupWQS).",
+       x = NULL, y = NULL) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 9),
+        strip.text = element_text(face = "bold"))
+print(p_heat4)
+
+ggsave(file.path(fig_dir, "Fig_comp4_nutrients_heatmap.pdf"), p_heat4,
+       width = 250, height = 280, units = "mm", dpi = 300)
+ggsave(file.path(fig_dir, "Fig_comp4_nutrients_heatmap.tiff"), p_heat4,
+       width = 250, height = 280, units = "mm", dpi = 300, compression = "lzw")
+```
+
+```{r comp4-stability, fig.height=7, fig.width=14}
+# Weight stability (CV) comparison across all methods and groups
+comp4_cv <- comp4_weights %>%
+  filter(Direction %in% c("Positive", "Negative", "Combined"), !is.na(Group)) %>%
+  group_by(Variable, Method, Group) %>%
+  summarise(Mean = mean(Weight, na.rm = TRUE),
+            SD = sd(Weight, na.rm = TRUE),
+            CV = ifelse(Mean > 0.01, SD / Mean, NA_real_), .groups = "drop")
+
+comp4_cv$Group <- factor(comp4_cv$Group,
+                          levels = c("Carotenoids", "Vitamins", "Minerals", "Macro_Stimulants"))
+
+p_cv4 <- ggplot(comp4_cv %>% filter(!is.na(CV)),
+                aes(x = Method, y = CV, fill = Method)) +
+  geom_boxplot(alpha = 0.4, outlier.size = 1) +
+  geom_jitter(width = 0.15, size = 1, alpha = 0.5) +
+  facet_wrap(~Group, nrow = 1) +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = paste0("Comparison 4: Weight Stability (CV) by Method (", N_SEEDS, " seeds)"),
+       subtitle = "Lower CV = more stable weight estimates across seeds",
+       y = "Coefficient of Variation (SD / Mean)") +
+  theme_bw(base_size = 14) +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 30, hjust = 1))
+print(p_cv4)
+
+ggsave(file.path(fig_dir, "Fig_comp4_stability_cv.pdf"), p_cv4,
+       width = 250, height = 120, units = "mm", dpi = 300)
+ggsave(file.path(fig_dir, "Fig_comp4_stability_cv.tiff"), p_cv4,
+       width = 250, height = 120, units = "mm", dpi = 300, compression = "lzw")
+```
+
+---
+
+# SGL-WQS Group-Level Analysis
+
+SGL-WQS uses sparse group lasso, which can set entire group coefficients to zero. When a group's β ≈ 0, within-group weights are meaningless — they partition "nothing". This section examines group selection and effect sizes to contextualize the weight results above.
+
+## Comparison 1: Mixture Effect (gWQS::wqs_data, single group)
+
+```{r comp1-group-beta, fig.height=5, fig.width=10}
+comp1_beta_long <- comp1_group_info %>%
+  pivot_longer(cols = c(Pos_Index, Neg_Index),
+               names_to = "Direction", values_to = "Index_Sum") %>%
+  mutate(Direction = ifelse(Direction == "Pos_Index", "Positive", "Negative"))
+
+p_grp1 <- ggplot(comp1_beta_long, aes(x = Direction, y = Index_Sum, fill = Direction)) +
+  geom_violin(alpha = 0.3, trim = FALSE) +
+  geom_jitter(size = 1.5, alpha = 0.6, width = 0.15) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  scale_fill_manual(values = c("Positive" = "steelblue", "Negative" = "tomato")) +
+  labs(title = paste0("Comparison 1: SGL-WQS Mixture Effect (", N_SEEDS, " seeds)"),
+       subtitle = "Data: gWQS::wqs_data (n = 500, single group: 34 PCBs)",
+       y = "Index Sum (β)", x = NULL) +
+  theme_bw(base_size = 14) +
+  theme(legend.position = "none")
+print(p_grp1)
+
+ggsave(file.path(fig_dir, "Fig_comp1_sglwqs_group_beta.pdf"), p_grp1,
+       width = 140, height = 100, units = "mm", dpi = 300)
+ggsave(file.path(fig_dir, "Fig_comp1_sglwqs_group_beta.tiff"), p_grp1,
+       width = 140, height = 100, units = "mm", dpi = 300, compression = "lzw")
+```
+
+```{r comp1-group-pvalue}
+# Validation significance
+comp1_pval_summary <- comp1_group_info %>%
+  summarise(
+    Pos_Sig = sum(Pos_Pvalue < 0.05, na.rm = TRUE),
+    Neg_Sig = sum(Neg_Pvalue < 0.05, na.rm = TRUE),
+    N = sum(!is.na(Pos_Pvalue)),
+    .groups = "drop"
+  )
+cat(sprintf("Comp 1 (PCBs): Positive significant in %d/%d seeds, Negative in %d/%d seeds\n",
+            comp1_pval_summary$Pos_Sig, comp1_pval_summary$N,
+            comp1_pval_summary$Neg_Sig, comp1_pval_summary$N))
+```
+
+## Comparison 2: Mixture Effect (qgcomp::metals, single group)
+
+```{r comp2-group-beta, fig.height=5, fig.width=10}
+comp2_beta_long <- comp2_group_info %>%
+  pivot_longer(cols = c(Pos_Index, Neg_Index),
+               names_to = "Direction", values_to = "Index_Sum") %>%
+  mutate(Direction = ifelse(Direction == "Pos_Index", "Positive", "Negative"))
+
+p_grp2 <- ggplot(comp2_beta_long, aes(x = Direction, y = Index_Sum, fill = Direction)) +
+  geom_violin(alpha = 0.3, trim = FALSE) +
+  geom_jitter(size = 1.5, alpha = 0.6, width = 0.15) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  scale_fill_manual(values = c("Positive" = "steelblue", "Negative" = "tomato")) +
+  labs(title = paste0("Comparison 2: SGL-WQS Mixture Effect (", N_SEEDS, " seeds)"),
+       subtitle = "Data: qgcomp::metals (n = 452, single group: 15 metals)",
+       y = "Index Sum (β)", x = NULL) +
+  theme_bw(base_size = 14) +
+  theme(legend.position = "none")
+print(p_grp2)
+
+ggsave(file.path(fig_dir, "Fig_comp2_sglwqs_group_beta.pdf"), p_grp2,
+       width = 140, height = 100, units = "mm", dpi = 300)
+ggsave(file.path(fig_dir, "Fig_comp2_sglwqs_group_beta.tiff"), p_grp2,
+       width = 140, height = 100, units = "mm", dpi = 300, compression = "lzw")
+```
+
+```{r comp2-group-pvalue}
+comp2_pval_summary <- comp2_group_info %>%
+  summarise(
+    Pos_Sig = sum(Pos_Pvalue < 0.05, na.rm = TRUE),
+    Neg_Sig = sum(Neg_Pvalue < 0.05, na.rm = TRUE),
+    N = sum(!is.na(Pos_Pvalue)),
+    .groups = "drop"
+  )
+cat(sprintf("Comp 2 (Metals): Positive significant in %d/%d seeds, Negative in %d/%d seeds\n",
+            comp2_pval_summary$Pos_Sig, comp2_pval_summary$N,
+            comp2_pval_summary$Neg_Sig, comp2_pval_summary$N))
+```
+
+## Comparison 3: Group Selection & Effect (groupWQS::simdata)
+
+```{r comp3-group-selection, fig.height=6, fig.width=12}
+# Selection frequency
+comp3_sel_freq <- comp3_group_info %>%
+  group_by(Group) %>%
+  summarise(
+    N_Seeds = n(),
+    N_Selected = sum(Selected),
+    Selection_Rate = mean(Selected),
+    .groups = "drop"
+  )
+
+kable(comp3_sel_freq,
+      caption = paste0("SGL-WQS Group Selection Frequency (", N_SEEDS, " seeds) — Comparison 3"),
+      digits = 2) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+```{r comp3-group-beta, fig.height=7, fig.width=12}
+# Group beta distribution (long format for violin)
+comp3_beta_long <- comp3_group_info %>%
+  pivot_longer(cols = c(Pos_Index, Neg_Index),
+               names_to = "Direction", values_to = "Index_Sum") %>%
+  mutate(Direction = ifelse(Direction == "Pos_Index", "Positive", "Negative"),
+         Group = factor(Group, levels = c("PCBs", "Metals", "Pesticides")))
+
+p_grp3 <- ggplot(comp3_beta_long, aes(x = Group, y = Index_Sum, fill = Direction)) +
+  geom_violin(alpha = 0.3, position = position_dodge(width = 0.7), trim = FALSE) +
+  geom_jitter(aes(color = Direction), size = 1.5, alpha = 0.6,
+              position = position_jitterdodge(jitter.width = 0.1, dodge.width = 0.7)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  scale_fill_manual(values = c("Positive" = "steelblue", "Negative" = "tomato")) +
+  scale_color_manual(values = c("Positive" = "steelblue", "Negative" = "tomato")) +
+  labs(title = paste0("Comparison 3: SGL-WQS Group Index Sums (", N_SEEDS, " seeds)"),
+       subtitle = "Data: groupWQS::simdata. Non-zero = group selected by sparse group lasso.",
+       y = "Group Index Sum (β)", x = NULL) +
+  theme_bw(base_size = 14) +
+  theme(legend.position = "bottom")
+print(p_grp3)
+
+ggsave(file.path(fig_dir, "Fig_comp3_sglwqs_group_beta.pdf"), p_grp3,
+       width = 220, height = 130, units = "mm", dpi = 300)
+ggsave(file.path(fig_dir, "Fig_comp3_sglwqs_group_beta.tiff"), p_grp3,
+       width = 220, height = 130, units = "mm", dpi = 300, compression = "lzw")
+```
+
+```{r comp3-group-pvalue, fig.height=5, fig.width=12}
+# Validation p-values by group
+comp3_pval_long <- comp3_group_info %>%
+  filter(Selected) %>%  # only seeds where group was selected
+  pivot_longer(cols = c(Pos_Pvalue, Neg_Pvalue),
+               names_to = "Direction", values_to = "P_value") %>%
+  mutate(Direction = ifelse(Direction == "Pos_Pvalue", "Positive", "Negative"),
+         Group = factor(Group, levels = c("PCBs", "Metals", "Pesticides"))) %>%
+  filter(!is.na(P_value))
+
+if (nrow(comp3_pval_long) > 0) {
+  p_pv3 <- ggplot(comp3_pval_long, aes(x = Group, y = -log10(P_value), fill = Direction)) +
+    geom_violin(alpha = 0.3, position = position_dodge(width = 0.7), trim = FALSE) +
+    geom_jitter(size = 1.2, alpha = 0.6,
+                position = position_jitterdodge(jitter.width = 0.1, dodge.width = 0.7)) +
+    geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "red", alpha = 0.6) +
+    annotate("text", x = 0.5, y = -log10(0.05) + 0.3, label = "p = 0.05", 
+             color = "red", size = 3, hjust = 0) +
+    scale_fill_manual(values = c("Positive" = "steelblue", "Negative" = "tomato")) +
+    labs(title = paste0("Comparison 3: Validation P-values (Selected Groups Only)"),
+         subtitle = "Higher -log10(p) = more significant. Only seeds where group was selected.",
+         y = "-log10(p-value)", x = NULL) +
+    theme_bw(base_size = 14) +
+    theme(legend.position = "bottom")
+  print(p_pv3)
+  
+  ggsave(file.path(fig_dir, "Fig_comp3_sglwqs_pvalues.pdf"), p_pv3,
+         width = 220, height = 110, units = "mm", dpi = 300)
+  ggsave(file.path(fig_dir, "Fig_comp3_sglwqs_pvalues.tiff"), p_pv3,
+         width = 220, height = 110, units = "mm", dpi = 300, compression = "lzw")
+}
+```
+
+## Comparison 4: Group Selection & Effect (gWQS::tiwqs_data)
+
+```{r comp4-group-selection}
+comp4_sel_freq <- comp4_group_info %>%
+  group_by(Group) %>%
+  summarise(
+    N_Seeds = n(),
+    N_Selected = sum(Selected),
+    Selection_Rate = mean(Selected),
+    .groups = "drop"
+  )
+
+kable(comp4_sel_freq,
+      caption = paste0("SGL-WQS Group Selection Frequency (", N_SEEDS, " seeds) — Comparison 4"),
+      digits = 2) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+```{r comp4-group-beta, fig.height=7, fig.width=12}
+comp4_beta_long <- comp4_group_info %>%
+  pivot_longer(cols = c(Pos_Index, Neg_Index),
+               names_to = "Direction", values_to = "Index_Sum") %>%
+  mutate(Direction = ifelse(Direction == "Pos_Index", "Positive", "Negative"),
+         Group = factor(Group, levels = c("Carotenoids", "Vitamins", "Minerals", "Macro_Stimulants")))
+
+p_grp4 <- ggplot(comp4_beta_long, aes(x = Group, y = Index_Sum, fill = Direction)) +
+  geom_violin(alpha = 0.3, position = position_dodge(width = 0.7), trim = FALSE) +
+  geom_jitter(aes(color = Direction), size = 1.5, alpha = 0.6,
+              position = position_jitterdodge(jitter.width = 0.1, dodge.width = 0.7)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  scale_fill_manual(values = c("Positive" = "steelblue", "Negative" = "tomato")) +
+  scale_color_manual(values = c("Positive" = "steelblue", "Negative" = "tomato")) +
+  labs(title = paste0("Comparison 4: SGL-WQS Group Index Sums (", N_SEEDS, " seeds)"),
+       subtitle = "Data: gWQS::tiwqs_data. Non-zero = group selected by sparse group lasso.",
+       y = "Group Index Sum (β)", x = NULL) +
+  theme_bw(base_size = 14) +
+  theme(legend.position = "bottom")
+print(p_grp4)
+
+ggsave(file.path(fig_dir, "Fig_comp4_sglwqs_group_beta.pdf"), p_grp4,
+       width = 220, height = 130, units = "mm", dpi = 300)
+ggsave(file.path(fig_dir, "Fig_comp4_sglwqs_group_beta.tiff"), p_grp4,
+       width = 220, height = 130, units = "mm", dpi = 300, compression = "lzw")
+```
+
+```{r comp4-group-pvalue, fig.height=5, fig.width=12}
+comp4_pval_long <- comp4_group_info %>%
+  filter(Selected) %>%
+  pivot_longer(cols = c(Pos_Pvalue, Neg_Pvalue),
+               names_to = "Direction", values_to = "P_value") %>%
+  mutate(Direction = ifelse(Direction == "Pos_Pvalue", "Positive", "Negative"),
+         Group = factor(Group, levels = c("Carotenoids", "Vitamins", "Minerals", "Macro_Stimulants"))) %>%
+  filter(!is.na(P_value))
+
+if (nrow(comp4_pval_long) > 0) {
+  p_pv4 <- ggplot(comp4_pval_long, aes(x = Group, y = -log10(P_value), fill = Direction)) +
+    geom_violin(alpha = 0.3, position = position_dodge(width = 0.7), trim = FALSE) +
+    geom_jitter(size = 1.2, alpha = 0.6,
+                position = position_jitterdodge(jitter.width = 0.1, dodge.width = 0.7)) +
+    geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "red", alpha = 0.6) +
+    annotate("text", x = 0.5, y = -log10(0.05) + 0.3, label = "p = 0.05",
+             color = "red", size = 3, hjust = 0) +
+    scale_fill_manual(values = c("Positive" = "steelblue", "Negative" = "tomato")) +
+    labs(title = paste0("Comparison 4: Validation P-values (Selected Groups Only)"),
+         subtitle = "Higher -log10(p) = more significant.",
+         y = "-log10(p-value)", x = NULL) +
+    theme_bw(base_size = 14) +
+    theme(legend.position = "bottom")
+  print(p_pv4)
+  
+  ggsave(file.path(fig_dir, "Fig_comp4_sglwqs_pvalues.pdf"), p_pv4,
+         width = 220, height = 110, units = "mm", dpi = 300)
+  ggsave(file.path(fig_dir, "Fig_comp4_sglwqs_pvalues.tiff"), p_pv4,
+         width = 220, height = 110, units = "mm", dpi = 300, compression = "lzw")
+}
+```
+
+## Combined Group Selection Summary
+
+```{r group-selection-combined}
+# Combine across all comparisons
+comp1_sel_freq <- comp1_group_info %>%
+  group_by(Group) %>%
+  summarise(N_Seeds = n(), N_Selected = sum(Selected),
+            Selection_Rate = mean(Selected), .groups = "drop")
+comp2_sel_freq <- comp2_group_info %>%
+  group_by(Group) %>%
+  summarise(N_Seeds = n(), N_Selected = sum(Selected),
+            Selection_Rate = mean(Selected), .groups = "drop")
+
+combined_sel <- bind_rows(
+  comp1_sel_freq %>% mutate(Comparison = "1: PCBs (n=500, single group)"),
+  comp2_sel_freq %>% mutate(Comparison = "2: Metals (n=452, single group)"),
+  comp3_sel_freq %>% mutate(Comparison = "3: Multi-group (n=1000, binomial)"),
+  comp4_sel_freq %>% mutate(Comparison = "4: Nutrients (n=5960, 4 groups)")
+)
+
+kable(combined_sel %>% dplyr::select(Comparison, Group, N_Selected, Selection_Rate),
+      caption = paste0("SGL-WQS Group Selection Summary (", N_SEEDS, " seeds)"),
+      digits = 2,
+      col.names = c("Comparison", "Group", "Times Selected", "Selection Rate")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+```{r significance-summary}
+# Significance summary: how often is the group effect significant (p < 0.05)?
+sig_summary <- bind_rows(
+  comp1_group_info %>% mutate(Comparison = "1: PCBs"),
+  comp2_group_info %>% mutate(Comparison = "2: Metals"),
+  comp3_group_info %>% mutate(Comparison = "3: Multi-group"),
+  comp4_group_info %>% mutate(Comparison = "4: Nutrients")
+) %>%
+  filter(Selected) %>%
+  group_by(Comparison, Group) %>%
+  summarise(
+    N_Selected = n(),
+    Pos_Sig = sum(Pos_Pvalue < 0.05, na.rm = TRUE),
+    Neg_Sig = sum(Neg_Pvalue < 0.05, na.rm = TRUE),
+    Pos_Sig_Rate = Pos_Sig / N_Selected,
+    Neg_Sig_Rate = Neg_Sig / N_Selected,
+    .groups = "drop"
+  )
+
+kable(sig_summary,
+      caption = paste0("SGL-WQS: Significance Rate Among Selected Seeds (p < 0.05)"),
+      digits = 2,
+      col.names = c("Comparison", "Group", "Selected Seeds", 
+                     "Pos Sig", "Neg Sig", "Pos Sig Rate", "Neg Sig Rate")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+---
+
+# Weight Stability (Cross-Comparison)
+
+```{r cross-comparison-summary, fig.height=8, fig.width=12}
+# Cross-comparison: Median CV per method across all comparisons
+cv_all <- bind_rows(
+  comp1_weights %>%
+    filter(Direction %in% c("Positive", "Negative", "Combined")) %>%
+    group_by(Variable, Method) %>%
+    summarise(Mean = mean(Weight, na.rm = TRUE), SD = sd(Weight, na.rm = TRUE),
+              CV = ifelse(Mean > 0.01, SD / Mean, NA_real_), .groups = "drop") %>%
+    mutate(Comparison = "1: PCBs (n=500)"),
+  comp2_weights %>%
+    filter(Direction %in% c("Positive", "Negative", "Combined")) %>%
+    group_by(Variable, Method) %>%
+    summarise(Mean = mean(Weight, na.rm = TRUE), SD = sd(Weight, na.rm = TRUE),
+              CV = ifelse(Mean > 0.01, SD / Mean, NA_real_), .groups = "drop") %>%
+    mutate(Comparison = "2: Metals (n=452)"),
+  comp3_weights %>%
+    filter(Direction %in% c("Positive", "Negative", "Combined")) %>%
+    group_by(Variable, Method) %>%
+    summarise(Mean = mean(Weight, na.rm = TRUE), SD = sd(Weight, na.rm = TRUE),
+              CV = ifelse(Mean > 0.01, SD / Mean, NA_real_), .groups = "drop") %>%
+    mutate(Comparison = "3: Multi-group (n=1000)"),
+  comp4_weights %>%
+    filter(Direction %in% c("Positive", "Negative", "Combined")) %>%
+    group_by(Variable, Method) %>%
+    summarise(Mean = mean(Weight, na.rm = TRUE), SD = sd(Weight, na.rm = TRUE),
+              CV = ifelse(Mean > 0.01, SD / Mean, NA_real_), .groups = "drop") %>%
+    mutate(Comparison = "4: Nutrients (n=5960)")
+)
+
+p_cv_all <- ggplot(cv_all %>% filter(!is.na(CV)),
+                   aes(x = Method, y = CV, fill = Method)) +
+  geom_boxplot(alpha = 0.4, outlier.size = 0.8) +
+  geom_jitter(width = 0.12, size = 0.6, alpha = 0.4) +
+  facet_wrap(~Comparison, nrow = 1) +
+  scale_fill_brewer(palette = "Set1") +
+  scale_y_continuous(limits = c(0, NA)) +
+  labs(title = paste0("Weight Stability Across All Comparisons (", N_SEEDS, " seeds)"),
+       subtitle = "CV = SD / Mean weight across seeds. Lower = more stable.",
+       y = "Coefficient of Variation") +
+  theme_bw(base_size = 14) +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 30, hjust = 1))
+print(p_cv_all)
+
+ggsave(file.path(fig_dir, "Fig_cross_comparison_cv.pdf"), p_cv_all,
+       width = 250, height = 120, units = "mm", dpi = 300)
+ggsave(file.path(fig_dir, "Fig_cross_comparison_cv.tiff"), p_cv_all,
+       width = 250, height = 120, units = "mm", dpi = 300, compression = "lzw")
+```
+
+```{r cv-summary-table}
+cv_summary_table <- cv_all %>%
+  filter(!is.na(CV)) %>%
+  group_by(Comparison, Method) %>%
+  summarise(Median_CV = median(CV, na.rm = TRUE),
+            IQR_CV = IQR(CV, na.rm = TRUE), .groups = "drop") %>%
+  mutate(`Median (IQR)` = sprintf("%.2f (%.2f)", Median_CV, IQR_CV)) %>%
+  dplyr::select(Comparison, Method, `Median (IQR)`) %>%
+  pivot_wider(names_from = Method, values_from = `Median (IQR)`)
+
+kable(cv_summary_table, caption = paste0("Weight Stability: Median CV (IQR) Across ", N_SEEDS, " Seeds")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+---
+
+# Summary
+
+```{r summary-table}
+# Count successful seeds per comparison
+n_comp1 <- comp1_weights %>% filter(Method == "SGL-WQS") %>%
+  pull(Seed) %>% unique() %>% length()
+n_comp2 <- comp2_weights %>% filter(Method == "SGL-WQS") %>%
+  pull(Seed) %>% unique() %>% length()
+n_comp3 <- comp3_weights %>% filter(Method == "SGL-WQS") %>%
+  pull(Seed) %>% unique() %>% length()
+n_comp4 <- comp4_weights %>% filter(Method == "SGL-WQS") %>%
+  pull(Seed) %>% unique() %>% length()
+
+summary_df <- data.frame(
+  Comparison = c("1: PCBs (gWQS)", "2: Metals (qgcomp)",
+                 "3: Multi-group (groupWQS)", "4: Nutrients (gWQS)"),
+  Data = c("wqs_data", "metals", "simdata", "tiwqs_data"),
+  Package = c("gWQS", "qgcomp", "groupWQS", "gWQS"),
+  n_vars = c(length(PCBs), length(Xnm), length(all_vars_g), length(nutrients)),
+  Outcome = c("yLBX", "y", "Y", "bmxbmi"),
+  Family = c("gaussian", "gaussian", "binomial", "gaussian"),
+  Seeds_OK = c(n_comp1, n_comp2, n_comp3, n_comp4)
+)
+
+kable(summary_df, caption = "Summary of Comparisons") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+```{r summary-table1}
+library(dplyr)
+library(knitr)
+library(kableExtra)
+
+# -----------------------------------------------------------
+# 1. qgcomp — deterministic, run once
+# summary(qc4)$coefficients に psi1行が存在する
+# -----------------------------------------------------------
+qc4_coef    <- summary(qc4)$coefficients
+qc4_psi     <- qc4$psi
+qc4_psi_pos <- qc4$pos.psi
+qc4_psi_neg <- qc4$neg.psi
+qc4_se      <- qc4_coef["psi1", "Std. Error"]
+qc4_p       <- qc4_coef["psi1", "Pr(>|t|)"]
+
+cat("=== qgcomp (deterministic) ===\n")
+cat(sprintf("  psi = %.4f (SE = %.4f, p = %.3e)\n", qc4_psi, qc4_se, qc4_p))
+cat(sprintf("  psi+ = %.4f,  psi- = %.4f\n\n", qc4_psi_pos, qc4_psi_neg))
+
+qgcomp_str <- sprintf("\u03c8 = %.3f (SE = %.3f, p = %.2g)", qc4_psi, qc4_se, qc4_p)
+
+# -----------------------------------------------------------
+# 2. gWQS — 30-seed summary
+# -----------------------------------------------------------
+gwqs_sum <- comp4_gwqs_coefs %>%
+  summarise(
+    n           = n(),
+    pwqs_median = median(pwqs,    na.rm = TRUE),
+    pwqs_q1     = quantile(pwqs,  0.25, na.rm = TRUE),
+    pwqs_q3     = quantile(pwqs,  0.75, na.rm = TRUE),
+    pwqs_se_med = median(pwqs_se, na.rm = TRUE),
+    pwqs_sig_n  = sum(pwqs_p < 0.05, na.rm = TRUE),
+    nwqs_median = median(nwqs,    na.rm = TRUE),
+    nwqs_q1     = quantile(nwqs,  0.25, na.rm = TRUE),
+    nwqs_q3     = quantile(nwqs,  0.75, na.rm = TRUE),
+    nwqs_se_med = median(nwqs_se, na.rm = TRUE),
+    nwqs_sig_n  = sum(nwqs_p < 0.05, na.rm = TRUE)
+  )
+
+cat("=== gWQS (30 seeds) ===\n")
+cat(sprintf("  pwqs: median = %.4f [%.4f, %.4f], SE = %.4f, sig %d/%d\n",
+            gwqs_sum$pwqs_median, gwqs_sum$pwqs_q1, gwqs_sum$pwqs_q3,
+            gwqs_sum$pwqs_se_med, gwqs_sum$pwqs_sig_n, gwqs_sum$n))
+cat(sprintf("  nwqs: median = %.4f [%.4f, %.4f], SE = %.4f, sig %d/%d\n\n",
+            gwqs_sum$nwqs_median, gwqs_sum$nwqs_q1, gwqs_sum$nwqs_q3,
+            gwqs_sum$nwqs_se_med, gwqs_sum$nwqs_sig_n, gwqs_sum$n))
+
+gwqs_str <- sprintf(
+  "pwqs: %.3f [%.3f, %.3f] (SE = %.3f), sig %d/%d;<br>nwqs: %.3f [%.3f, %.3f] (SE = %.3f), sig %d/%d",
+  gwqs_sum$pwqs_median, gwqs_sum$pwqs_q1, gwqs_sum$pwqs_q3,
+  gwqs_sum$pwqs_se_med, gwqs_sum$pwqs_sig_n, gwqs_sum$n,
+  gwqs_sum$nwqs_median, gwqs_sum$nwqs_q1, gwqs_sum$nwqs_q3,
+  gwqs_sum$nwqs_se_med, gwqs_sum$nwqs_sig_n, gwqs_sum$n
+)
+
+# -----------------------------------------------------------
+# 3. groupWQS — 30-seed group-level beta summary
+# -----------------------------------------------------------
+grp_ord <- c("Carotenoids", "Vitamins", "Minerals", "Macro_Stimulants")
+
+grpwqs_sum <- comp4_gwqs_group_info %>%
+  group_by(Group) %>%
+  summarise(
+    n        = n(),
+    beta_med = median(Beta,    na.rm = TRUE),
+    beta_q1  = quantile(Beta,  0.25, na.rm = TRUE),
+    beta_q3  = quantile(Beta,  0.75, na.rm = TRUE),
+    se_med   = median(SE,      na.rm = TRUE),
+    sig_n    = sum(Pvalue < 0.05, na.rm = TRUE),
+    .groups  = "drop"
+  ) %>%
+  arrange(factor(Group, levels = grp_ord))
+
+cat("=== groupWQS (30 seeds) ===\n")
+for (i in seq_len(nrow(grpwqs_sum))) {
+  r <- grpwqs_sum[i, ]
+  cat(sprintf("  %-20s beta = %.4f [%.4f, %.4f] (SE = %.4f), sig %d/%d\n",
+              r$Group, r$beta_med, r$beta_q1, r$beta_q3,
+              r$se_med, r$sig_n, r$n))
+}
+cat("\n")
+
+grpwqs_str <- paste(
+  sprintf("%s: %.3f [%.3f, %.3f]",
+          grpwqs_sum$Group, grpwqs_sum$beta_med,
+          grpwqs_sum$beta_q1, grpwqs_sum$beta_q3),
+  collapse = "; "
+)
+
+# -----------------------------------------------------------
+# 4. SGL-WQS — 30-seed group x direction summary
+# -----------------------------------------------------------
+sgl_sum <- comp4_group_info %>%
+  group_by(Group) %>%
+  summarise(
+    n_seeds    = n(),
+    pos_median = median(Pos_Estimate, na.rm = TRUE),
+    pos_q1     = quantile(Pos_Estimate, 0.25, na.rm = TRUE),
+    pos_q3     = quantile(Pos_Estimate, 0.75, na.rm = TRUE),
+    pos_sig_n  = sum(Pos_Pvalue < 0.05, na.rm = TRUE),
+    neg_median = median(Neg_Estimate, na.rm = TRUE),
+    neg_q1     = quantile(Neg_Estimate, 0.25, na.rm = TRUE),
+    neg_q3     = quantile(Neg_Estimate, 0.75, na.rm = TRUE),
+    neg_sig_n  = sum(Neg_Pvalue < 0.05, na.rm = TRUE),
+    .groups    = "drop"
+  ) %>%
+  arrange(factor(Group, levels = grp_ord))
+
+cat("=== SGL-WQS (30 seeds) ===\n")
+for (i in seq_len(nrow(sgl_sum))) {
+  r <- sgl_sum[i, ]
+  cat(sprintf("  %-20s  pos: %.4f [%.4f, %.4f] %d/%d  |  neg: %.4f [%.4f, %.4f] %d/%d\n",
+              r$Group,
+              r$pos_median, r$pos_q1, r$pos_q3, r$pos_sig_n, r$n_seeds,
+              r$neg_median, r$neg_q1, r$neg_q3, r$neg_sig_n, r$n_seeds))
+}
+cat("\n")
+
+sglwqs_parts <- character(nrow(sgl_sum))
+for (i in seq_len(nrow(sgl_sum))) {
+  r <- sgl_sum[i, ]
+  sglwqs_parts[i] <- sprintf(
+    "%s+: %.3f [%.3f, %.3f] (%d/%d); %s\u2212: %.3f [%.3f, %.3f] (%d/%d)",
+    r$Group, r$pos_median, r$pos_q1, r$pos_q3, r$pos_sig_n, r$n_seeds,
+    r$Group, r$neg_median, r$neg_q1, r$neg_q3, r$neg_sig_n, r$n_seeds
+  )
+}
+sglwqs_str <- paste(sglwqs_parts, collapse = ";<br>")
+
+# -----------------------------------------------------------
+# 5. Table 2 出力
+# -----------------------------------------------------------
+table2_df <- data.frame(
+  Method = c("qgcomp", "gWQS", "groupWQS", "SGL-WQS"),
+  Estimand = c(
+    "Net mixture effect \u03c8<br>(deterministic)",
+    "Two-index (ungrouped)<br>30-seed median [IQR]",
+    "Group-specific \u03b2 (single direction)<br>30-seed median [IQR]",
+    "Group \u00d7 direction-specific<br>30-seed median [IQR], sig/30"
+  ),
+  Key_estimates = c(qgcomp_str, gwqs_str, grpwqs_str, sglwqs_str),
+  check.names = FALSE
+)
+
+kable(table2_df,
+      caption = "Table 2. NHANES-Derived Nutrient Mixture Example (BMI outcome): Effect Estimates Across Methods",
+      col.names = c("Method", "Estimand / Reporting", "Key estimates (30-seed summary)"),
+      escape = FALSE) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+                full_width = TRUE, font_size = 13) %>%
+  column_spec(1, bold = TRUE, width = "7em") %>%
+  column_spec(2, width = "16em") %>%
+  column_spec(3, width = "50em")
+```

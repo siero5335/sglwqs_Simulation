@@ -1,0 +1,5 @@
+scenario_id,TRUE
+split_global_binary_n5000_w0p2_b0,100
+split_global_binary_n500_w0p2_b0,100
+split_partial_binary_n5000_w0p6_b0p3,100
+split_partial_binary_n500_w0p6_b0p3,100

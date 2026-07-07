@@ -1,0 +1,445 @@
+---
+title: "Convergence and failure-rate summary"
+subtitle: "Unified failure table for qgcomp, gWQS, groupWQS, and SGL-WQS"
+author: "SGL-WQS reviewer response"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    number_sections: true
+    theme: flatly
+    highlight: tango
+    code_folding: show
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 10,
+  fig.height = 6,
+  dpi = 150
+)
+
+repo_root <- normalizePath(file.path(getwd(), if (dir.exists("analysis")) "." else ".."))
+source(file.path(repo_root, "analysis", "_sglwqs_review_helpers.R"))
+load_review_packages(c(
+  "MASS", "Matrix", "dplyr", "tidyr", "ggplot2", "knitr", "kableExtra",
+  "qgcomp", "gWQS", "groupWQS", "pkgload"
+))
+sglwqs_source <- load_review_sglwqs(root = repo_root)
+
+RUN_MODE <- review_run_mode()
+IS_FULL <- identical(RUN_MODE, "full")
+N_WORKERS <- review_workers(RUN_MODE)
+N_BOOT_SMALL <- as.integer(Sys.getenv("SGLWQS_FAILURE_N_BOOT", if (IS_FULL) 50 else 5))
+N_SEEDS_SMALL <- as.integer(Sys.getenv("SGLWQS_FAILURE_SEEDS", if (IS_FULL) 30 else 2))
+NFOLDS <- as.integer(Sys.getenv("SGLWQS_NFOLDS", if (IS_FULL) 5 else 3))
+NLAMBDA <- as.integer(Sys.getenv("SGLWQS_NLAMBDA", if (IS_FULL) 25 else 8))
+SMALL_NS <- as.integer(strsplit(Sys.getenv("SGLWQS_FAILURE_NS", "100,200"), ",")[[1]])
+
+groups <- review_groups()
+exposures <- review_exposures(groups)
+output_dir <- file.path(repo_root, "analysis", "outputs")
+dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
+```
+
+# Configuration
+
+```{r configuration}
+config <- data.frame(
+  item = c("run_mode", "sglwqs_source", "workers", "small_run_n",
+           "small_run_seeds", "small_run_bootstraps", "nfolds", "nlambda"),
+  value = c(RUN_MODE, sglwqs_source$source, N_WORKERS,
+            paste(SMALL_NS, collapse = ", "), N_SEEDS_SMALL,
+            N_BOOT_SMALL, NFOLDS, NLAMBDA)
+)
+knitr::kable(config, caption = "Analysis configuration") %>%
+  kableExtra::kable_styling(full_width = FALSE)
+```
+
+# Existing cached comparison results
+
+```{r cache-loaders}
+cache_bases <- c(
+  file.path(repo_root, "final_res", "compare_mixture_methods_by_samplesize_30seeds_cache",
+            "html", "run-analysis_eddc57c06de07419047d1c0dd34ae45b"),
+  file.path(repo_root, "first_res", "compare_mixture_methods_by_samplesize_30seeds_cache",
+            "html", "run-analysis_eddc57c06de07419047d1c0dd34ae45b"),
+  file.path(repo_root, "final_res", "compare_mixture_methods_43vars_30seeds_cache",
+            "html", "run-analysis_78a57f39df73ee0be1914af6f57fcc6e"),
+  file.path(repo_root, "first_res", "compare_mixture_methods_43vars_30seeds_cache",
+            "html", "run-analysis_78a57f39df73ee0be1914af6f57fcc6e")
+)
+
+load_comparison_cache <- function(base) {
+  loaded <- lazy_load_cache(base)
+  if (is.null(loaded) || is.null(loaded$all_results)) {
+    return(NULL)
+  }
+  loaded$all_results
+}
+
+cached_result_sets <- lapply(cache_bases, load_comparison_cache)
+names(cached_result_sets) <- basename(dirname(dirname(dirname(cache_bases))))
+cached_result_sets <- Filter(Negate(is.null), cached_result_sets)
+
+data.frame(
+  cache = names(cached_result_sets),
+  n_result_objects = vapply(cached_result_sets, length, integer(1))
+) %>%
+  knitr::kable(caption = "Cached result sets found") %>%
+  kableExtra::kable_styling(full_width = FALSE)
+```
+
+```{r cached-failure-table}
+extract_cached_failures <- function(results, source_label) {
+  dplyr::bind_rows(lapply(results, function(res) {
+    if (is.null(res$n) || is.null(res$seed)) {
+      return(data.frame())
+    }
+    methods <- c(qgcomp = "qgcomp", gwqs = "gWQS",
+                 groupwqs = "groupWQS", sglwqs = "SGL-WQS")
+    dplyr::bind_rows(lapply(names(methods), function(key) {
+      err <- res[[paste0(key, "_error")]]
+      success_key <- switch(
+        key,
+        qgcomp = "qgcomp_weights",
+        gwqs = "gwqs_weights",
+        groupwqs = "groupwqs_weights",
+        sglwqs = "sglwqs_weights"
+      )
+      data.frame(
+        source = source_label,
+        n = res$n,
+        seed = res$seed,
+        method = methods[[key]],
+        attempted = TRUE,
+        succeeded = is.null(err) && !is.null(res[[success_key]]),
+        error = if (is.null(err)) NA_character_ else as.character(err),
+        error_class = if (is.null(err)) NA_character_ else classification_from_error(err),
+        stringsAsFactors = FALSE
+      )
+    }))
+  }))
+}
+
+cached_failures <- dplyr::bind_rows(Map(extract_cached_failures,
+                                        cached_result_sets,
+                                        names(cached_result_sets)))
+
+cached_failure_summary <- cached_failures %>%
+  dplyr::group_by(source, n, method) %>%
+  dplyr::summarise(
+    attempted = dplyr::n(),
+    succeeded = sum(succeeded),
+    failed = attempted - succeeded,
+    failure_rate = failed / attempted,
+    .groups = "drop"
+  )
+
+knitr::kable(
+  cached_failure_summary %>%
+    dplyr::mutate(failure_rate = sprintf("%.1f%%", 100 * failure_rate)),
+  caption = "Failure rates reconstructed from cached 30-seed comparison results"
+) %>%
+  kableExtra::kable_styling(full_width = FALSE)
+```
+
+# Additional n = 100/200 failure-diagnostic run
+
+```{r small-grid}
+small_grid <- tidyr::expand_grid(
+  n = SMALL_NS,
+  seed = review_seeds(N_SEEDS_SMALL)
+) %>%
+  dplyr::mutate(row_id = dplyr::row_number())
+
+knitr::kable(small_grid, caption = "Additional small-n diagnostic grid") %>%
+  kableExtra::kable_styling(full_width = FALSE)
+```
+
+```{r small-run}
+run_qgcomp_failure <- function(dat) {
+  form <- stats::as.formula(
+    paste("Y ~", paste(exposures, collapse = " + "), "+ sex + age + bmi")
+  )
+  tryCatch({
+    fit <- qgcomp::qgcomp.glm.noboot(
+      form, expnms = exposures, data = dat, family = binomial(), q = 4
+    )
+    list(ok = TRUE, error = NA_character_, extra = list(psi = fit$psi))
+  }, error = function(e) {
+    list(ok = FALSE, error = conditionMessage(e), extra = list())
+  })
+}
+
+run_gwqs_failure <- function(dat, seed) {
+  tryCatch({
+    fit <- gWQS::gwqs(
+      Y ~ pwqs + nwqs + sex + age + bmi,
+      mix_name = exposures,
+      data = dat,
+      q = 4,
+      validation = 0.4,
+      b = N_BOOT_SMALL,
+      b1_pos = TRUE,
+      rh = 1,
+      family = "binomial",
+      seed = seed,
+      plan_strategy = "sequential"
+    )
+    list(ok = TRUE, error = NA_character_, extra = list(converged = fit$fit$converged))
+  }, error = function(e) {
+    list(ok = FALSE, error = conditionMessage(e), extra = list())
+  })
+}
+
+run_groupwqs_failure <- function(dat, seed) {
+  tryCatch({
+    group_list <- unname(groups)
+    X_gw <- groupWQS::make.X(dat, num.groups = length(group_list), groups = group_list)
+    x_s <- groupWQS::make.x.s(dat, num.groups = length(group_list), groups = group_list)
+    set.seed(seed)
+    train_idx <- sample(seq_len(nrow(dat)), size = round(nrow(dat) * 0.6))
+    valid_idx <- setdiff(seq_len(nrow(dat)), train_idx)
+    fit <- groupWQS::gwqs.fit(
+      y = dat$Y[valid_idx],
+      y.train = dat$Y[train_idx],
+      x = X_gw[valid_idx, , drop = FALSE],
+      x.train = X_gw[train_idx, , drop = FALSE],
+      x.s = x_s,
+      B = N_BOOT_SMALL,
+      n.quantiles = 4,
+      func = "binary"
+    )
+    list(ok = TRUE, error = NA_character_, extra = list(rank = fit$fit$rank))
+  }, error = function(e) {
+    list(ok = FALSE, error = conditionMessage(e), extra = list())
+  })
+}
+
+run_sgl_failure <- function(dat, seed) {
+  fit_res <- safe_sglwqs(
+    data = dat,
+    exposures = exposures,
+    groups = groups,
+    family = "binomial",
+    validation = TRUE,
+    bootstrap = TRUE,
+    n_boot = N_BOOT_SMALL,
+    parallel = FALSE,
+    seed = seed,
+    nfolds = NFOLDS,
+    nlambda = NLAMBDA,
+    minor_threshold = 0.10,
+    verbose = FALSE
+  )
+  if (!isTRUE(fit_res$ok)) {
+    return(list(ok = FALSE, error = fit_res$error, diag = data.frame()))
+  }
+  list(ok = TRUE, error = NA_character_,
+       diag = extract_sglwqs_diagnostics_row(fit_res$fit))
+}
+
+run_one_small <- function(row) {
+  load_review_sglwqs(root = repo_root)
+  dat <- simulate_review_mixture(
+    n = row$n,
+    seed = row$seed,
+    correlation = 0.5,
+    outcome = "binomial",
+    scenario = "active"
+  )
+
+  qg <- run_qgcomp_failure(dat)
+  gw <- run_gwqs_failure(dat, row$seed + 1000L)
+  gr <- run_groupwqs_failure(dat, row$seed + 2000L)
+  sg <- run_sgl_failure(dat, row$seed + 3000L)
+
+  base <- dplyr::bind_rows(
+    data.frame(n = row$n, seed = row$seed, method = "qgcomp",
+               succeeded = qg$ok, error = qg$error),
+    data.frame(n = row$n, seed = row$seed, method = "gWQS",
+               succeeded = gw$ok, error = gw$error),
+    data.frame(n = row$n, seed = row$seed, method = "groupWQS",
+               succeeded = gr$ok, error = gr$error),
+    data.frame(n = row$n, seed = row$seed, method = "SGL-WQS",
+               succeeded = sg$ok, error = sg$error)
+  ) %>%
+    dplyr::mutate(
+      source = "additional_n100_n200",
+      attempted = TRUE,
+      error_class = vapply(error, classification_from_error, character(1))
+    )
+
+  if (nrow(sg$diag) > 0L) {
+    base <- base %>%
+      dplyr::left_join(
+        cbind(data.frame(n = row$n, seed = row$seed, method = "SGL-WQS"), sg$diag),
+        by = c("n", "seed", "method")
+      )
+  }
+  base
+}
+
+small_failures <- dplyr::bind_rows(
+  review_lapply(split(seq_len(nrow(small_grid)), seq_len(nrow(small_grid))), function(i) {
+    run_one_small(small_grid[i, , drop = FALSE])
+  }, workers = if (IS_FULL) N_WORKERS else 1L)
+)
+
+if (requireNamespace("readr", quietly = TRUE)) {
+  readr::write_csv(small_failures,
+                   file.path(output_dir, "convergence_failure_small_runs.csv"))
+} else {
+  utils::write.csv(small_failures,
+                   file.path(output_dir, "convergence_failure_small_runs.csv"),
+                   row.names = FALSE)
+}
+```
+
+```{r small-summary}
+small_failure_summary <- small_failures %>%
+  dplyr::group_by(n, method) %>%
+  dplyr::summarise(
+    attempted = dplyr::n(),
+    succeeded = sum(succeeded),
+    failed = attempted - succeeded,
+    failure_rate = failed / attempted,
+    .groups = "drop"
+  )
+
+knitr::kable(
+  small_failure_summary %>%
+    dplyr::mutate(failure_rate = sprintf("%.1f%%", 100 * failure_rate)),
+  caption = "Additional small-n failure rates"
+) %>%
+  kableExtra::kable_styling(full_width = FALSE)
+```
+
+# SGL-WQS failure subtypes and diagnostics
+
+```{r sgl-subtypes}
+sgl_subtypes <- small_failures %>%
+  dplyr::filter(method == "SGL-WQS") %>%
+  dplyr::mutate(
+    failure_subtype = dplyr::case_when(
+      !succeeded ~ error_class,
+      all_zero_weights %in% TRUE ~ "all_zero_weights",
+      rank_deficient %in% TRUE ~ "rank_deficiency",
+      validation_estimable %in% FALSE ~ "validation_not_estimable",
+      is.finite(bootstrap_success_rate) & bootstrap_success_rate < 1 ~ "partial_bootstrap_failure",
+      lambda_at_path_edge %in% TRUE ~ "lambda_path_edge",
+      TRUE ~ "succeeded_no_flag"
+    )
+  ) %>%
+  dplyr::count(n, failure_subtype, name = "n_runs")
+
+knitr::kable(
+  sgl_subtypes,
+  caption = "SGL-WQS diagnostic subtypes in the additional small-n run"
+) %>%
+  kableExtra::kable_styling(full_width = FALSE)
+
+sgl_diag_summary <- small_failures %>%
+  dplyr::filter(method == "SGL-WQS", succeeded) %>%
+  dplyr::group_by(n) %>%
+  dplyr::summarise(
+    median_bootstrap_success_rate = stats::median(bootstrap_success_rate, na.rm = TRUE),
+    all_zero_rate = mean(all_zero_weights, na.rm = TRUE),
+    rank_deficiency_rate = mean(rank_deficient, na.rm = TRUE),
+    validation_not_estimable_rate = mean(!validation_estimable, na.rm = TRUE),
+    lambda_edge_rate = mean(lambda_at_path_edge, na.rm = TRUE),
+    median_nonzero_weights = stats::median(n_nonzero, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+knitr::kable(
+  sgl_diag_summary %>%
+    dplyr::mutate(dplyr::across(
+      c(median_bootstrap_success_rate, all_zero_rate, rank_deficiency_rate,
+        validation_not_estimable_rate, lambda_edge_rate),
+      ~ sprintf("%.1f%%", 100 * .x)
+    )),
+  caption = "SGL-WQS diagnostic rates among successful small-n fits"
+) %>%
+  kableExtra::kable_styling(full_width = FALSE)
+```
+
+# Unified reviewer-facing table
+
+```{r unified-table}
+unified <- dplyr::bind_rows(
+  cached_failures %>%
+    dplyr::select(source, n, seed, method, attempted, succeeded, error, error_class),
+  small_failures %>%
+    dplyr::select(source, n, seed, method, attempted, succeeded, error, error_class)
+) %>%
+  dplyr::group_by(source, n, method) %>%
+  dplyr::summarise(
+    attempted = dplyr::n(),
+    succeeded = sum(succeeded),
+    failed = attempted - succeeded,
+    failure_rate = failed / attempted,
+    most_common_error = {
+      errs <- error_class[!is.na(error_class)]
+      if (length(errs) == 0L) NA_character_ else names(sort(table(errs), decreasing = TRUE))[1]
+    },
+    .groups = "drop"
+  )
+
+knitr::kable(
+  unified %>%
+    dplyr::mutate(failure_rate = sprintf("%.1f%%", 100 * failure_rate)) %>%
+    dplyr::arrange(n, method, source),
+  caption = "Unified failure-rate table"
+) %>%
+  kableExtra::kable_styling(full_width = FALSE)
+```
+
+```{r unified-plot}
+if (nrow(unified) > 0L) {
+  ggplot(unified, aes(x = factor(n), y = failure_rate, fill = method)) +
+    geom_col(position = position_dodge(width = 0.8), width = 0.7) +
+    facet_wrap(~source, scales = "free_x") +
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+    labs(x = "Sample size", y = "Failure rate",
+         fill = "Method",
+         title = "Failure rates by method and sample size") +
+    theme_minimal() +
+    theme(legend.position = "bottom")
+}
+```
+
+# Reviewer-language summary target
+
+```{r reviewer-summary}
+reviewer_summary <- unified %>%
+  dplyr::filter(n %in% c(100, 200)) %>%
+  dplyr::select(source, n, method, attempted, failed, failure_rate, most_common_error) %>%
+  dplyr::arrange(n, method)
+
+knitr::kable(
+  reviewer_summary %>%
+    dplyr::mutate(failure_rate = sprintf("%.1f%%", 100 * failure_rate)),
+  caption = "n < 200 reviewer-summary table"
+) %>%
+  kableExtra::kable_styling(full_width = FALSE)
+```
+
+This table is designed to support cautious wording for very small samples:
+SGL-WQS remains useful for structured, sparse index estimation, but at
+`n < 200` the validation and bootstrap diagnostics should be inspected and
+qgcomp can be a more robust default when the analysis priority is a stable
+overall mixture effect estimate rather than structured variable selection.
+
+# Session information
+
+```{r session-info}
+sessionInfo()
+```

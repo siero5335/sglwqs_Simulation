@@ -1,0 +1,17 @@
+variable,metabolite,group,n_nonmissing,missing_rate,detect_rate_unweighted,detect_rate_weighted
+URXPHG,Phenylglyoxylic acid,Aromatic hydrocarbons,4325,0.08504336788660884,0.9986127167630058,0.9972633779563288
+URXBMA,N-acetyl-S-(benzyl)-L-cysteine,Aromatic hydrocarbons,4325,0.08504336788660884,0.9972254335260116,0.9971445508911189
+URX34M,3-/4-methylhippuric acid,Aromatic hydrocarbons,4325,0.08504336788660884,0.9932947976878612,0.9945620078925534
+URXMAD,Mandelic acid,Aromatic hydrocarbons,4325,0.08504336788660884,0.9891329479768786,0.9910448684867001
+URX2MH,2-methylhippuric acid,Aromatic hydrocarbons,4325,0.08504336788660884,0.8827745664739884,0.8814307836354454
+URXDHB,"N-acetyl-S-(3,4-dihydroxybutyl)-L-cysteine",Dienes/alkenes/epoxides,4325,0.08504336788660884,1,1
+URXMB3,N-acetyl-S-(4-hydroxy-2-butenyl)-L-cysteine,Dienes/alkenes/epoxides,4325,0.08504336788660884,0.9745664739884393,0.9770388700813045
+URXHP2,N-acetyl-S-(2-hydroxypropyl)-L-cysteine,Dienes/alkenes/epoxides,4325,0.08504336788660884,0.9472832369942197,0.9525146709277671
+URXIPM3,N-acetyl-S-(4-hydroxy-2-methyl-2-buten-1-yl)-L-cysteine,Dienes/alkenes/epoxides,4324,0.08525491855299344,0.8246993524514339,0.8149059042122441
+URXAAM,N-acetyl-S-(2-carbamoylethyl)-L-cysteine,Nitrile/amide/cyanide-related,4325,0.08504336788660884,0.9993063583815028,0.9996747822730988
+URXAMC,N-acetyl-S-(N-methylcarbamoyl)-L-cysteine,Nitrile/amide/cyanide-related,4325,0.08504336788660884,0.9935260115606936,0.9957953171969782
+URXCEM,N-acetyl-S-(2-carboxyethyl)-L-cysteine,Nitrile/amide/cyanide-related,4325,0.08504336788660884,0.9868208092485549,0.98398249578053
+URXATC,2-aminothiazoline-4-carboxylic acid,Nitrile/amide/cyanide-related,4325,0.08504336788660884,0.9026589595375722,0.8846336833390236
+URXCYM,N-acetyl-S-(2-cyanoethyl)-L-cysteine,Nitrile/amide/cyanide-related,4325,0.08504336788660884,0.8094797687861272,0.8154910107560563
+URXPMM,N-acetyl-S-(3-hydroxypropyl-1-methyl)-L-cysteine,Reactive aldehydes,4325,0.08504336788660884,1,1
+URXHPM,N-acetyl-S-(3-hydroxypropyl)-L-cysteine,Reactive aldehydes,4325,0.08504336788660884,0.9969942196531791,0.9953407896837452

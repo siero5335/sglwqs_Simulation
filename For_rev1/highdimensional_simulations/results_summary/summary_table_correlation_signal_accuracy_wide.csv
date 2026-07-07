@@ -1,0 +1,10 @@
+"Scenario","within_rho","truth_profile","SGL-WQS","gWQS","groupWQS","qgcomp"
+"p100_r020_baseline3_main10",0.2,"baseline3",0.689,0.733,0.678,0.811
+"p100_r020_strong3_orth5",0.2,"strong3",0.733,0.778,0.689,0.822
+"p100_r020_weak3_orth5",0.2,"weak3",0.533,0.622,0.622,0.733
+"p100_r045_baseline3_main10",0.45,"baseline3",0.678,0.678,0.678,0.767
+"p100_r045_strong3_main10",0.45,"strong3",0.7,0.7,0.7,0.811
+"p100_r045_weak3_main10",0.45,"weak3",0.589,0.622,0.678,0.689
+"p100_r080_baseline3_main10",0.8,"baseline3",0.6,0.578,0.678,0.667
+"p100_r080_strong3_orth5",0.8,"strong3",0.578,0.578,0.778,0.733
+"p100_r080_weak3_orth5",0.8,"weak3",0.511,0.489,0.689,0.622

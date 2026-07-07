@@ -1,0 +1,198 @@
+---
+title: "SGL-WQS Analysis with Complete Data"
+subtitle: "Large-Scale Simulation Example"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{SGL-WQS Analysis with Complete Data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE, 
+  comment = "#>", 
+  eval = TRUE,
+  fig.width = 10,
+  fig.height = 7,
+  out.width = "100%",
+  dpi = 150
+)
+
+# Publication figure output directory
+fig_dir <- "figures"
+dir.create(fig_dir, showWarnings = FALSE, recursive = TRUE)
+```
+
+## Overview
+
+This vignette demonstrates SGL-WQS analysis with large-scale data (n=100,000) having **known true effects** in this simulation:
+
+- **PCBs**: Positive effect
+- **Metals**: Positive/Negative effect
+- **PFASs**: No effect
+
+## Simulation Data
+
+```{r generate-data}
+library(MASS); library(tictoc); library(tidyverse)
+
+generate_sglwqs_simdata <- function(n = 100000, seed = 71) {
+  set.seed(seed)
+  
+  # Covariates
+  sex <- rbinom(n, 1, 0.5)
+  age <- pmax(pmin(round(rnorm(n, 50, 12)), 80), 20)
+  bmi <- pmax(pmin(round(22 + 0.05*age + 1.5*sex + rnorm(n, 0, 4), 1), 45), 15)
+  
+  # PCBs (positive effect, high correlation)
+  # Updated to 5 congeners to match Robustness Test (added pcb_118)
+  cor_pcb <- matrix(c(1.00, 0.60, 0.70, 0.65, 0.60,  # pcb_118 (new)
+                      0.60, 1.00, 0.75, 0.70, 0.65,  # pcb_138
+                      0.70, 0.75, 1.00, 0.80, 0.70,  # pcb_153
+                      0.65, 0.70, 0.80, 1.00, 0.75,  # pcb_180
+                      0.60, 0.65, 0.70, 0.75, 1.00), # pcb_187
+                    5, 5)
+                    
+  pcb <- MASS::mvrnorm(n, c(3.5, 3.5, 4.0, 4.5, 3.0), 
+                       diag(c(1.5, 1.5, 1.8, 2.0, 1.5)) %*% cor_pcb %*% diag(c(1.5, 1.5, 1.8, 2.0, 1.5)))
+  colnames(pcb) <- c("pcb_118", "pcb_138", "pcb_153", "pcb_180", "pcb_187")
+  
+  # Metals (mixed effect, moderate correlation)
+  cor_metal <- matrix(c(1, .4, .5, .3, .3,
+                        .4, 1, .4, .2, .2,
+                        .5, .4, 1, .3, .2,
+                        .3, .2, .3, 1, .1,
+                        .3, .2, .2, .1, 1), 5, 5)
+  metal_raw <- MASS::mvrnorm(n, log(c(0.5, 2, 1, 100, 20)), 
+                             diag(c(.6, .8, .5, .3, .25)) %*% cor_metal %*% diag(c(.6, .8, .5, .3, .25)))
+  metal <- exp(metal_raw)
+  colnames(metal) <- c("cd", "pb", "hg", "se", "mg")
+  
+  # PFASs (no effect, low correlation)
+  cor_pfas <- matrix(c(1, .3, .3,
+                       .3, 1, .3,
+                       .3, .3, 1), 3, 3)
+  pfas_raw <- MASS::mvrnorm(n, log(c(2, 0.5, 5)), 
+                            diag(c(.4, .5, .6)) %*% cor_pfas %*% diag(c(.4, .5, .6)))
+  pfas <- exp(pfas_raw)
+  colnames(pfas) <- c("PFOA", "PFNA", "PFOS")
+  
+  # Data Frame
+  X <- cbind(pcb, metal, pfas)
+  covariates <- data.frame(sex = sex, age = age, bmi = bmi)
+  
+  # True Effects (Log-Odds)
+  # pcb_118 has 0 effect (innocent bystander) to maintain similar theoretical results
+  beta_pcb <- c(0.04, 0.10, 0.20, 0.03, 0.02)  # 118, 138, 153, 180, 187
+  beta_metal <- c(-0.08, -0.18, 0.05, 0.10, 0.00) # cd, pb, hg, se, mg
+  beta_pfas <- c(0, 0, 0)
+  beta_cov <- c(0.2, 0.01, 0.02) # sex, age, bmi
+  
+  # Linear Predictor
+  # Standardize X for generation to match beta scale roughly
+  X_sc <- scale(X)
+  
+  lp <- -3 + 
+    X_sc[, 1:5] %*% beta_pcb + 
+    X_sc[, 6:10] %*% beta_metal + 
+    X_sc[, 11:13] %*% beta_pfas +
+    as.matrix(covariates) %*% beta_cov
+  
+  # Probability & Outcome
+  prob <- 1 / (1 + exp(-lp))
+  Y <- rbinom(n, 1, prob)
+  
+  result <- data.frame(Y = Y, covariates, pcb, metal, pfas)
+  
+  attr(result, "true_beta") <- list(
+    pcb = setNames(beta_pcb, colnames(pcb)),
+    metal = setNames(beta_metal, colnames(metal)),
+    pfas = setNames(beta_pfas, colnames(pfas))
+  )
+  
+  return(result)
+}
+
+simdata <- generate_sglwqs_simdata(n = 100000, seed = 71)
+```
+
+## SGL-WQS Analysis
+
+```{r analysis}
+library(sglwqs)
+library(future)
+
+groups <- list(
+  PCBs = c("pcb_118", "pcb_138", "pcb_153", "pcb_180", "pcb_187"),
+  Metals = c("cd", "pb", "hg", "se", "mg"),
+  PFASs = c("PFOA", "PFNA", "PFOS")
+)
+
+tic()
+plan(multisession, workers = 10)
+
+
+fit <- sglwqs(
+  X = simdata[, unlist(groups)],
+  y = simdata$Y,
+  covariates = simdata[, c("sex", "age", "bmi")],
+  groups = groups,
+  family = "binomial",
+  bootstrap = TRUE,
+  n_boot = 200,
+  parallel = TRUE,
+  validation = TRUE,
+  train_prop = 0.6,
+  seed = 71
+)
+
+
+plan(sequential)
+toc()
+```
+
+## Results
+
+```{r results}
+# Summary
+summary(fit)
+
+# Publication-ready table
+inference_table(fit)
+```
+
+```{r results-plot, fig.height=9}
+# Weight visualization
+p_weights <- plot_weights(fit)
+print(p_weights)
+
+# Publication output (180mm = 2-column, 220mm height for 13 vars × 3 groups)
+ggsave(file.path(fig_dir, "Fig_sglwqs_weights.pdf"), p_weights,
+       width = 180, height = 220, units = "mm", dpi = 300)
+ggsave(file.path(fig_dir, "Fig_sglwqs_weights.tiff"), p_weights,
+       width = 180, height = 220, units = "mm", dpi = 300, compression = "lzw")
+```
+
+```{r combined-plot, fig.width=12, fig.height=10}
+# Combined visualization
+p_combined <- plot_combined_results(fit)
+print(p_combined)
+
+# Publication output (180mm × 180mm, 2-column full-width)
+ggsave(file.path(fig_dir, "Fig_sglwqs_combined.pdf"), p_combined,
+       width = 180, height = 180, units = "mm", dpi = 300)
+ggsave(file.path(fig_dir, "Fig_sglwqs_combined.tiff"), p_combined,
+       width = 180, height = 180, units = "mm", dpi = 300, compression = "lzw")
+```
+
+## Expected Findings
+
+| Group | Direction | Expected Result |
+|-------|-----------|-----------------|
+| PCBs | Positive | Significant (p < 0.05) |
+| Metals (Hg, Se) | Positive | Significant (p < 0.05) |
+| Metals (Pb, Cd) | Negative | Significant (p < 0.05) |
+| PFASs | Either | Not significant |
+
+The method correctly identifies which chemicals have positive, negative, or no effects.

@@ -1,0 +1,11 @@
+scenario_id,scenario_family,n,outcome_family,within_r,between_r,jobs,fit_success,fit_failure,fit_failure_rate,all_zero_rate,boundary_rate,boot_success_mean,runtime_median_sec,runtime_p90_sec
+gaussian_null_n1000_w0p2_b0,gaussian_null,1000,gaussian,0.2,0,200,200,0,0,0.705,0.365,1,74.78949999809265,89.46493561267852
+gaussian_null_n1000_w0p95_b0,gaussian_null,1000,gaussian,0.95,0,200,200,0,0,0.75,0.46,1,96.43548846244812,112.13140137195587
+global_binary_n5000_w0p2_b0,global_binary,5000,binomial,0.2,0,500,500,0,0,0.768,0.316,1,862.5591559410095,1755.117490577698
+global_binary_n5000_w0p95_b0,global_binary,5000,binomial,0.95,0,500,500,0,0,0.782,0.312,1,664.3070310354233,975.3615516662599
+global_binary_n500_w0p2_b0,global_binary,500,binomial,0.2,0,500,500,0,0,0.77,0.534,1,668.8391724824905,2432.976550364495
+global_binary_n500_w0p95_b0,global_binary,500,binomial,0.95,0,500,500,0,0,0.772,0.526,1,592.9214669466019,2013.7829115867657
+partial_binary_n5000_w0p6_b0,partial_binary,5000,binomial,0.6,0,300,300,0,0,0,0,1,1638.0686340332031,2402.4443780899046
+partial_binary_n5000_w0p6_b0p3,partial_binary,5000,binomial,0.6,0.3,300,300,0,0,0,0,1,1650.4219385385513,2546.128944778443
+partial_binary_n500_w0p6_b0,partial_binary,500,binomial,0.6,0,300,300,0,0,0.44333333333333336,0.31,1,821.176992058754,1922.3397962331787
+partial_binary_n500_w0p6_b0p3,partial_binary,500,binomial,0.6,0.3,300,300,0,0,0.4766666666666667,0.30666666666666664,1,732.8492258787155,2282.886129260064

@@ -1,0 +1,11 @@
+scenario_id,scenario_family,scenario_label,n,outcome_family,effect,within_r,between_r,complete,target,remaining
+gaussian_null_n1000_w0p2_b0,gaussian_null,gaussian_null; n=1000; within=0.2; between=0,1000,gaussian,gaussian_null,0.2,0,200,200,0
+gaussian_null_n1000_w0p95_b0,gaussian_null,gaussian_null; n=1000; within=0.95; between=0,1000,gaussian,gaussian_null,0.95,0,200,200,0
+global_binary_n500_w0p2_b0,global_binary,global_binary; n=500; within=0.2; between=0,500,binomial,global_null,0.2,0,500,500,0
+global_binary_n500_w0p95_b0,global_binary,global_binary; n=500; within=0.95; between=0,500,binomial,global_null,0.95,0,500,500,0
+global_binary_n5000_w0p2_b0,global_binary,global_binary; n=5000; within=0.2; between=0,5000,binomial,global_null,0.2,0,500,500,0
+global_binary_n5000_w0p95_b0,global_binary,global_binary; n=5000; within=0.95; between=0,5000,binomial,global_null,0.95,0,500,500,0
+partial_binary_n500_w0p6_b0,partial_binary,partial_binary; n=500; within=0.6; between=0,500,binomial,partial_null,0.6,0,300,300,0
+partial_binary_n500_w0p6_b0p3,partial_binary,partial_binary; n=500; within=0.6; between=0.3,500,binomial,partial_null,0.6,0.3,300,300,0
+partial_binary_n5000_w0p6_b0,partial_binary,partial_binary; n=5000; within=0.6; between=0,5000,binomial,partial_null,0.6,0,300,300,0
+partial_binary_n5000_w0p6_b0p3,partial_binary,partial_binary; n=5000; within=0.6; between=0.3,5000,binomial,partial_null,0.6,0.3,300,300,0

@@ -1,0 +1,644 @@
+---
+title: "n = 100 Rare-Event Sensitivity for Mixture Method Fits"
+subtitle: "Original baseline event rate vs increased baseline event rate"
+author: "Validation Analysis"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    number_sections: true
+    theme: flatly
+    highlight: tango
+    df_print: paged
+params:
+  run_analysis: true
+  n_boot: 200
+  n_quantiles: 4
+  train_prop: 0.6
+  sglwqs_lib: ""
+  output_dir: "analysis/outputs/n100_rare_event_failure_sensitivity"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 10,
+  fig.height = 6,
+  dpi = 150
+)
+
+Sys.setenv(
+  OMP_NUM_THREADS = "1",
+  OPENBLAS_NUM_THREADS = "1",
+  MKL_NUM_THREADS = "1",
+  VECLIB_MAXIMUM_THREADS = "1"
+)
+
+input_path <- normalizePath(knitr::current_input(dir = TRUE), mustWork = TRUE)
+analysis_dir <- dirname(input_path)
+repo_root <- dirname(analysis_dir)
+resolve_repo_path <- function(path) {
+  if (grepl("^/", path)) normalizePath(path, mustWork = FALSE) else file.path(repo_root, path)
+}
+
+if (nzchar(params$sglwqs_lib) && dir.exists(resolve_repo_path(params$sglwqs_lib))) {
+  .libPaths(c(normalizePath(resolve_repo_path(params$sglwqs_lib)), .libPaths()))
+}
+
+suppressPackageStartupMessages({
+  library(MASS)
+  library(qgcomp)
+  library(gWQS)
+  library(groupWQS)
+  library(sglwqs)
+  library(future)
+  library(ggplot2)
+  library(dplyr)
+  library(tidyr)
+  library(knitr)
+  library(kableExtra)
+  library(readr)
+  library(purrr)
+  library(stringr)
+})
+
+future::plan(future::sequential)
+
+N_BOOT <- params$n_boot
+N_QUANTILES <- params$n_quantiles
+TRAIN_PROP <- params$train_prop
+OUT_DIR <- resolve_repo_path(params$output_dir)
+MANIFEST_DIR <- file.path(OUT_DIR, "manifests")
+TABLE_DIR <- file.path(OUT_DIR, "tables")
+dir.create(MANIFEST_DIR, recursive = TRUE, showWarnings = FALSE)
+dir.create(TABLE_DIR, recursive = TRUE, showWarnings = FALSE)
+
+SEEDS <- c(
+  71, 42, 123, 256, 314, 500, 617, 789, 888, 999,
+  1001, 1123, 1234, 1357, 1500, 1618, 1729, 1847, 1963, 2048,
+  2222, 2345, 2500, 2718, 2801, 3001, 3141, 3333, 3500, 3777
+)
+
+SCENARIOS <- tibble::tibble(
+  scenario = c("original_rare", "higher_baseline"),
+  scenario_label = c("Original rare-event baseline", "Higher baseline event rate"),
+  n = 100L,
+  intercept = c(-3.0, -1.3)
+)
+
+METHODS <- c("qgcomp", "gWQS", "groupWQS", "SGL-WQS")
+
+PCBs <- c("pcb_118", "pcb_138", "pcb_153", "pcb_180", "pcb_187")
+Metals <- c("cd", "pb", "hg", "se", "mg")
+PFASs <- c("PFOA", "PFNA", "PFOS")
+all_exposures <- c(PCBs, Metals, PFASs)
+groups <- list(PCBs = PCBs, Metals = Metals, PFASs = PFASs)
+group_list <- list(PCBs, Metals, PFASs)
+
+true_directions <- tibble::tibble(
+  Variable = all_exposures,
+  True_Beta = c(
+    0.04, 0.15, 0.20, 0.08, 0.05,
+    -0.12, -0.18, 0.10, 0.14, -0.02,
+    0, 0, 0
+  ),
+  Group = c(rep("PCBs", 5), rep("Metals", 5), rep("PFASs", 3))
+) |>
+  mutate(
+    True_Direction = case_when(
+      True_Beta > 0.01 ~ "Positive",
+      True_Beta < -0.01 ~ "Negative",
+      TRUE ~ "None"
+    )
+  )
+```
+
+# Purpose
+
+This targeted sensitivity analysis separates two issues in the previous
+sample-size simulation:
+
+1. `n = 100` as a small-sample setting.
+2. The extremely small number of outcome events induced by the original
+   binary-outcome intercept.
+
+The original scenario uses the same DGM and method settings as
+`final_res/compare_mixture_methods_by_samplesize_30seeds.Rmd` for `n = 100`.
+The only change in the sensitivity scenario is the outcome intercept, increased
+from `-3.0` to `-1.3` to produce a non-rare binary outcome. Bootstrap size,
+quantization, train/validation split, covariates, exposures, correlations, and
+the 30 seeds are otherwise unchanged.
+
+# Functions
+
+```{r functions}
+generate_sglwqs_simdata <- function(n = 100, seed = 71, intercept = -3.0) {
+  set.seed(seed)
+
+  sex <- rbinom(n, 1, 0.5)
+  age <- pmax(pmin(round(rnorm(n, 50, 12)), 80), 20)
+  bmi <- pmax(pmin(round(22 + 0.05 * age + 1.5 * sex + rnorm(n, 0, 4), 1), 45), 15)
+
+  cor_pcb <- matrix(c(
+    1.00, 0.60, 0.70, 0.65, 0.60,
+    0.60, 1.00, 0.75, 0.70, 0.65,
+    0.70, 0.75, 1.00, 0.80, 0.70,
+    0.65, 0.70, 0.80, 1.00, 0.75,
+    0.60, 0.65, 0.70, 0.75, 1.00
+  ), 5, 5)
+
+  pcb <- MASS::mvrnorm(
+    n, c(3.5, 3.5, 4.0, 4.5, 3.0),
+    diag(c(1.5, 1.5, 1.8, 2.0, 1.5)) %*%
+      cor_pcb %*% diag(c(1.5, 1.5, 1.8, 2.0, 1.5))
+  )
+  colnames(pcb) <- PCBs
+
+  cor_metal <- matrix(c(
+    1.00, 0.60, 0.15, 0.10, 0.20,
+    0.60, 1.00, 0.10, 0.15, 0.25,
+    0.15, 0.10, 1.00, 0.55, 0.20,
+    0.10, 0.15, 0.55, 1.00, 0.30,
+    0.20, 0.25, 0.20, 0.30, 1.00
+  ), 5, 5, byrow = TRUE)
+
+  metal_raw <- MASS::mvrnorm(
+    n, log(c(0.5, 2, 1, 100, 20)),
+    diag(c(0.6, 0.8, 0.5, 0.3, 0.25)) %*%
+      cor_metal %*% diag(c(0.6, 0.8, 0.5, 0.3, 0.25))
+  )
+  metal <- exp(metal_raw)
+  colnames(metal) <- Metals
+
+  pfas <- pmax(MASS::mvrnorm(n, c(3, 1.5, 5), diag(c(2, 1, 3.5))), 0.1)
+  colnames(pfas) <- PFASs
+
+  beta_pcb <- c(0.04, 0.15, 0.20, 0.08, 0.05)
+  beta_metal <- c(-0.12, -0.18, 0.10, 0.14, -0.02)
+  beta_pfas <- c(0, 0, 0)
+
+  eta <- as.numeric(
+    intercept +
+      scale(pcb) %*% beta_pcb +
+      scale(metal) %*% beta_metal +
+      scale(pfas) %*% beta_pfas +
+      sex * 0.3 + (age - 50) / 10 * 0.02 + (bmi - 25) / 5 * 0.05
+  )
+
+  Y <- rbinom(n, 1, stats::plogis(eta))
+
+  result <- data.frame(pcb, metal, pfas, sex = sex, age = age, bmi = bmi, Y = Y)
+  attr(result, "true_beta") <- list(
+    pcb = setNames(beta_pcb, PCBs),
+    metal = setNames(beta_metal, Metals),
+    pfas = setNames(beta_pfas, PFASs)
+  )
+  result
+}
+
+make_validation_split <- function(y, train_prop, seed) {
+  set.seed(seed)
+  ns <- asNamespace("sglwqs")
+  if (exists(".stratified_validation_train_idx", envir = ns, inherits = FALSE)) {
+    fn <- get(".stratified_validation_train_idx", envir = ns, inherits = FALSE)
+    return(fn(y, train_prop = train_prop, n = length(y)))
+  }
+  sample(seq_along(y), floor(length(y) * train_prop))
+}
+
+event_summary <- function(dat, seed) {
+  train_idx <- make_validation_split(dat$Y, train_prop = TRAIN_PROP, seed = seed)
+  valid_idx <- setdiff(seq_len(nrow(dat)), train_idx)
+  tibble::tibble(
+    event_rate = mean(dat$Y),
+    total_events = sum(dat$Y),
+    train_n = length(train_idx),
+    valid_n = length(valid_idx),
+    train_events = sum(dat$Y[train_idx]),
+    valid_events = sum(dat$Y[valid_idx]),
+    train_non_events = sum(dat$Y[train_idx] == 0),
+    valid_non_events = sum(dat$Y[valid_idx] == 0)
+  )
+}
+
+with_captured_warnings <- function(expr) {
+  warnings <- character()
+  value <- withCallingHandlers(
+    expr,
+    warning = function(w) {
+      warnings <<- c(warnings, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+  list(value = value, warnings = unique(warnings))
+}
+
+direction_accuracy <- function(detected) {
+  chk <- tibble::tibble(
+    Variable = names(detected),
+    Detected = unname(detected)
+  ) |>
+    left_join(true_directions |> select(Variable, True_Direction), by = "Variable")
+  mean(chk$Detected == chk$True_Direction | chk$True_Direction == "None", na.rm = TRUE)
+}
+
+manifest_path <- function(scenario, seed, method) {
+  safe_method <- gsub("[^A-Za-z0-9]+", "_", method)
+  file.path(MANIFEST_DIR, sprintf("%s_seed%04d_%s.rds", scenario, seed, safe_method))
+}
+
+base_result <- function(scenario_row, seed, method, dat, ev) {
+  tibble::tibble(
+    scenario = scenario_row$scenario,
+    scenario_label = scenario_row$scenario_label,
+    n = scenario_row$n,
+    intercept = scenario_row$intercept,
+    seed = seed,
+    method = method,
+    event_rate = ev$event_rate,
+    total_events = ev$total_events,
+    train_n = ev$train_n,
+    valid_n = ev$valid_n,
+    train_events = ev$train_events,
+    valid_events = ev$valid_events,
+    train_non_events = ev$train_non_events,
+    valid_non_events = ev$valid_non_events,
+    fit_success = FALSE,
+    direction_accuracy = NA_real_,
+    estimate_pos = NA_real_,
+    estimate_neg = NA_real_,
+    sgl_all_zero_exposure = NA,
+    sgl_boot_success_rate = NA_real_,
+    warning_messages = NA_character_,
+    error_message = NA_character_,
+    runtime_sec = NA_real_
+  )
+}
+
+fit_qgcomp <- function(dat, seed) {
+  form <- as.formula(paste("Y ~", paste(all_exposures, collapse = " + "), "+ sex + age + bmi"))
+  fit <- qgcomp::qgcomp.glm.noboot(
+    form,
+    expnms = all_exposures,
+    data = dat,
+    family = binomial(),
+    q = N_QUANTILES
+  )
+  detected <- setNames(rep("Negative", length(all_exposures)), all_exposures)
+  detected[names(fit$pos.weights)] <- "Positive"
+  list(
+    fit = fit,
+    direction_accuracy = direction_accuracy(detected),
+    estimate_pos = unname(fit$pos.psi %||% NA_real_),
+    estimate_neg = unname(fit$neg.psi %||% NA_real_)
+  )
+}
+
+fit_gwqs <- function(dat, seed) {
+  form <- Y ~ pwqs + nwqs + sex + age + bmi
+  fit <- gWQS::gwqs(
+    form,
+    mix_name = all_exposures,
+    data = dat,
+    q = N_QUANTILES,
+    validation = 0.4,
+    b = N_BOOT,
+    b1_pos = TRUE,
+    rh = 1,
+    family = "binomial",
+    seed = seed,
+    plan_strategy = "sequential"
+  )
+  fw <- fit$final_weights
+  detected <- setNames(
+    ifelse(fw$mean_weight_p >= fw$mean_weight_n, "Positive", "Negative"),
+    fw$mix_name
+  )
+  co <- stats::coef(fit$fit)
+  list(
+    fit = fit,
+    direction_accuracy = direction_accuracy(detected[all_exposures]),
+    estimate_pos = unname(co["pwqs"] %||% NA_real_),
+    estimate_neg = unname(co["nwqs"] %||% NA_real_)
+  )
+}
+
+fit_groupwqs <- function(dat, seed) {
+  X_gw <- groupWQS::make.X(dat, num.groups = 3, groups = group_list)
+  x_s <- groupWQS::make.x.s(dat, num.groups = 3, groups = group_list)
+  n_total <- nrow(dat)
+  n_train <- round(n_total * TRAIN_PROP)
+  set.seed(seed)
+  train_idx <- sample(seq_len(n_total), size = n_train)
+  valid_idx <- setdiff(seq_len(n_total), train_idx)
+  fit <- groupWQS::gwqs.fit(
+    y = dat$Y[valid_idx],
+    y.train = dat$Y[train_idx],
+    x = X_gw[valid_idx, ],
+    x.train = X_gw[train_idx, ],
+    x.s = x_s,
+    B = N_BOOT,
+    n.quantiles = N_QUANTILES,
+    func = "binary"
+  )
+  co <- stats::coef(fit$fit)
+  group_coefs <- co[grep("^GWQS", names(co))]
+  detected <- c(
+    setNames(rep(ifelse(group_coefs[1] >= 0, "Positive", "Negative"), length(PCBs)), PCBs),
+    setNames(rep(ifelse(group_coefs[2] >= 0, "Positive", "Negative"), length(Metals)), Metals),
+    setNames(rep(ifelse(group_coefs[3] >= 0, "Positive", "Negative"), length(PFASs)), PFASs)
+  )
+  list(
+    fit = fit,
+    direction_accuracy = direction_accuracy(detected[all_exposures]),
+    estimate_pos = NA_real_,
+    estimate_neg = NA_real_
+  )
+}
+
+fit_sglwqs <- function(dat, seed) {
+  fit <- sglwqs::sglwqs(
+    X = dat[, all_exposures],
+    y = dat$Y,
+    covariates = dat[, c("sex", "age", "bmi")],
+    groups = groups,
+    family = "binomial",
+    n_quantiles = N_QUANTILES,
+    bootstrap = TRUE,
+    n_boot = N_BOOT,
+    parallel = FALSE,
+    validation = TRUE,
+    train_prop = TRAIN_PROP,
+    seed = seed
+  )
+  pos_w <- fit$pos_weights %||% setNames(rep(0, length(all_exposures)), all_exposures)
+  neg_w <- fit$neg_weights %||% setNames(rep(0, length(all_exposures)), all_exposures)
+  detected <- setNames(
+    ifelse(pos_w[all_exposures] > neg_w[all_exposures], "Positive", "Negative"),
+    all_exposures
+  )
+  boot_success_rate <- NA_real_
+  if (!is.null(fit$boot_info$n_success) && !is.null(fit$boot_info$n_boot)) {
+    boot_success_rate <- fit$boot_info$n_success / fit$boot_info$n_boot
+  } else if (!is.null(fit$boot_info$successful_bootstraps)) {
+    boot_success_rate <- mean(fit$boot_info$successful_bootstraps)
+  }
+  list(
+    fit = fit,
+    direction_accuracy = direction_accuracy(detected),
+    estimate_pos = unname(fit$pos_index_sum %||% NA_real_),
+    estimate_neg = unname(fit$neg_index_sum %||% NA_real_),
+    sgl_all_zero_exposure = isTRUE(sum(abs(pos_w), na.rm = TRUE) == 0 && sum(abs(neg_w), na.rm = TRUE) == 0),
+    sgl_boot_success_rate = boot_success_rate
+  )
+}
+
+`%||%` <- function(x, y) if (is.null(x) || length(x) == 0) y else x
+
+run_one_method <- function(scenario_row, seed, method) {
+  dat <- generate_sglwqs_simdata(n = scenario_row$n, seed = seed, intercept = scenario_row$intercept)
+  ev <- event_summary(dat, seed)
+  out <- base_result(scenario_row, seed, method, dat, ev)
+  start_time <- Sys.time()
+
+  ans <- tryCatch(
+    with_captured_warnings({
+      if (identical(method, "qgcomp")) {
+        fit_qgcomp(dat, seed)
+      } else if (identical(method, "gWQS")) {
+        fit_gwqs(dat, seed)
+      } else if (identical(method, "groupWQS")) {
+        fit_groupwqs(dat, seed)
+      } else if (identical(method, "SGL-WQS")) {
+        fit_sglwqs(dat, seed)
+      } else {
+        stop("Unknown method: ", method)
+      }
+    }),
+    error = function(e) {
+      list(error = conditionMessage(e), warnings = character())
+    }
+  )
+
+  out$runtime_sec <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
+
+  if (!is.null(ans$error)) {
+    out$error_message <- ans$error
+    out$warning_messages <- paste(ans$warnings, collapse = " | ")
+    return(out)
+  }
+
+  val <- ans$value
+  out$fit_success <- TRUE
+  out$direction_accuracy <- val$direction_accuracy %||% NA_real_
+  out$estimate_pos <- val$estimate_pos %||% NA_real_
+  out$estimate_neg <- val$estimate_neg %||% NA_real_
+  out$sgl_all_zero_exposure <- val$sgl_all_zero_exposure %||% NA
+  out$sgl_boot_success_rate <- val$sgl_boot_success_rate %||% NA_real_
+  out$warning_messages <- paste(ans$warnings, collapse = " | ")
+  out
+}
+```
+
+# Run or Resume Analysis
+
+```{r run-analysis}
+jobs <- tidyr::crossing(SCENARIOS, seed = SEEDS, method = METHODS)
+jobs <- jobs |>
+  mutate(path = pmap_chr(list(scenario, seed, method), manifest_path))
+
+cat("sglwqs package:", as.character(utils::packageVersion("sglwqs")), "\n")
+cat("sglwqs path:", system.file(package = "sglwqs"), "\n")
+cat("Total jobs:", nrow(jobs), "\n")
+cat("Existing manifests:", sum(file.exists(jobs$path)), "\n")
+
+if (isTRUE(params$run_analysis)) {
+  for (i in seq_len(nrow(jobs))) {
+    if (file.exists(jobs$path[i])) next
+    cat(sprintf(
+      "[%03d/%03d] %s seed=%d method=%s\n",
+      i, nrow(jobs), jobs$scenario[i], jobs$seed[i], jobs$method[i]
+    ))
+    row <- jobs[i, ]
+    result <- run_one_method(row, row$seed, row$method)
+    saveRDS(result, row$path)
+  }
+}
+
+cat("Completed manifests:", sum(file.exists(jobs$path)), "\n")
+```
+
+# Results
+
+```{r collect-results}
+result_files <- list.files(MANIFEST_DIR, pattern = "[.]rds$", full.names = TRUE)
+if (!length(result_files)) {
+  cat("No completed manifests are available yet. Re-render with params$run_analysis = TRUE.\n")
+  knitr::knit_exit()
+}
+results <- purrr::map_dfr(result_files, readRDS)
+readr::write_csv(results, file.path(TABLE_DIR, "n100_rare_event_method_results.csv"))
+
+event_results <- results |>
+  distinct(
+    scenario, scenario_label, n, intercept, seed,
+    event_rate, total_events, train_n, valid_n, train_events, valid_events,
+    train_non_events, valid_non_events
+  )
+readr::write_csv(event_results, file.path(TABLE_DIR, "n100_rare_event_event_counts.csv"))
+
+event_summary_tbl <- event_results |>
+  group_by(scenario, scenario_label, intercept) |>
+  summarise(
+    seeds = n(),
+    event_rate_mean = mean(event_rate),
+    event_rate_sd = sd(event_rate),
+    total_events_mean = mean(total_events),
+    total_events_min = min(total_events),
+    total_events_max = max(total_events),
+    train_events_mean = mean(train_events),
+    train_events_min = min(train_events),
+    train_events_max = max(train_events),
+    valid_events_mean = mean(valid_events),
+    valid_events_min = min(valid_events),
+    valid_events_max = max(valid_events),
+    seeds_train_events_le_2 = sum(train_events <= 2),
+    seeds_valid_events_le_2 = sum(valid_events <= 2),
+    .groups = "drop"
+  )
+readr::write_csv(event_summary_tbl, file.path(TABLE_DIR, "n100_rare_event_event_summary.csv"))
+
+method_summary <- results |>
+  group_by(scenario, scenario_label, intercept, method) |>
+  summarise(
+    attempted = n(),
+    fit_success = sum(fit_success, na.rm = TRUE),
+    fit_failure = attempted - fit_success,
+    fit_failure_rate = fit_failure / attempted,
+    direction_accuracy_mean = mean(direction_accuracy, na.rm = TRUE),
+    direction_accuracy_sd = sd(direction_accuracy, na.rm = TRUE),
+    runtime_median_sec = median(runtime_sec, na.rm = TRUE),
+    sgl_all_zero_rate = mean(sgl_all_zero_exposure %in% TRUE, na.rm = TRUE),
+    sgl_boot_success_rate_mean = mean(sgl_boot_success_rate, na.rm = TRUE),
+    .groups = "drop"
+  )
+readr::write_csv(method_summary, file.path(TABLE_DIR, "n100_rare_event_method_summary.csv"))
+
+failure_details <- results |>
+  filter(!fit_success | !is.na(error_message) & nzchar(error_message)) |>
+  select(scenario, scenario_label, seed, method, total_events, train_events, valid_events, error_message, warning_messages)
+readr::write_csv(failure_details, file.path(TABLE_DIR, "n100_rare_event_failure_details.csv"))
+```
+
+## Event Counts
+
+```{r event-summary-table}
+event_summary_tbl |>
+  mutate(
+    event_rate = sprintf("%.1f%% (SD %.1f%%)", 100 * event_rate_mean, 100 * event_rate_sd),
+    total_events = sprintf("%.1f [%d, %d]", total_events_mean, total_events_min, total_events_max),
+    train_events = sprintf("%.1f [%d, %d]", train_events_mean, train_events_min, train_events_max),
+    valid_events = sprintf("%.1f [%d, %d]", valid_events_mean, valid_events_min, valid_events_max)
+  ) |>
+  select(
+    Scenario = scenario_label,
+    Intercept = intercept,
+    Seeds = seeds,
+    `Event rate` = event_rate,
+    `Total events mean [min,max]` = total_events,
+    `Training events mean [min,max]` = train_events,
+    `Validation events mean [min,max]` = valid_events,
+    `Seeds with <=2 training events` = seeds_train_events_le_2,
+    `Seeds with <=2 validation events` = seeds_valid_events_le_2
+  ) |>
+  kable(caption = "Outcome event counts by scenario", align = "lrrrrrrr") |>
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+```{r event-count-plot}
+ggplot(event_results, aes(x = scenario_label, y = train_events, fill = scenario_label)) +
+  geom_boxplot(width = 0.55, outlier.shape = NA, alpha = 0.65) +
+  geom_jitter(width = 0.08, height = 0, size = 2, alpha = 0.8) +
+  geom_hline(yintercept = 2, linetype = "dashed", color = "firebrick") +
+  scale_fill_brewer(palette = "Set2") +
+  labs(x = NULL, y = "Training-set event count", fill = NULL) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+## Fit Success and Failure
+
+```{r method-summary-table}
+method_summary |>
+  mutate(
+    `Failure rate` = sprintf("%d/%d (%.1f%%)", fit_failure, attempted, 100 * fit_failure_rate),
+    `Accuracy mean (SD)` = ifelse(
+      is.nan(direction_accuracy_mean),
+      NA_character_,
+      sprintf("%.1f%% (%.1f%%)", 100 * direction_accuracy_mean, 100 * direction_accuracy_sd)
+    ),
+    `Median runtime, sec` = sprintf("%.1f", runtime_median_sec),
+    `SGL all-zero rate` = ifelse(
+      method == "SGL-WQS",
+      sprintf("%.1f%%", 100 * sgl_all_zero_rate),
+      NA_character_
+    ),
+    `SGL bootstrap success` = ifelse(
+      method == "SGL-WQS",
+      sprintf("%.1f%%", 100 * sgl_boot_success_rate_mean),
+      NA_character_
+    )
+  ) |>
+  select(
+    Scenario = scenario_label,
+    Method = method,
+    `Failure rate`,
+    `Accuracy mean (SD)`,
+    `Median runtime, sec`,
+    `SGL all-zero rate`,
+    `SGL bootstrap success`
+  ) |>
+  arrange(Scenario, Method) |>
+  kable(caption = "Method fit success/failure by n = 100 event-rate scenario") |>
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+```{r failure-details-table}
+if (nrow(failure_details)) {
+  failure_details |>
+    mutate(error_message = stringr::str_trunc(error_message, 120)) |>
+    arrange(scenario, method, seed) |>
+    kable(caption = "Failure details") |>
+    kable_styling(bootstrap_options = c("striped", "hover"), full_width = TRUE)
+} else {
+  cat("No method failures among completed jobs.\n")
+}
+```
+
+```{r success-plot}
+ggplot(method_summary, aes(x = method, y = 1 - fit_failure_rate, fill = scenario_label)) +
+  geom_col(position = position_dodge(width = 0.75), width = 0.65) +
+  scale_y_continuous(labels = scales::percent, limits = c(0, 1.05)) +
+  scale_fill_brewer(palette = "Set2") +
+  labs(x = NULL, y = "Fit success rate", fill = NULL) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+```
+
+# Interpretation
+
+The primary use of this sensitivity analysis is diagnostic rather than a new
+performance benchmark. If failures concentrate in the original `intercept =
+-3.0` condition and are attenuated in the higher-baseline condition, the `n =
+100` failures can be described as being driven by rare binary outcomes after
+the training/validation split and resampling, rather than by `n = 100` alone.
+
+The companion CSV files are saved under:
+
+```{r output-paths, echo=FALSE}
+cat(normalizePath(TABLE_DIR), sep = "\n")
+```

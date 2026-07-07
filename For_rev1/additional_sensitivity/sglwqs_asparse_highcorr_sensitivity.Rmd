@@ -1,0 +1,332 @@
+---
+title: "SGL-WQS asparse sensitivity under high exposure correlation"
+subtitle: "r = 0.95 correlation robustness scenario; sglwqs-main analysis version"
+author: "SGL-WQS reviewer response"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    number_sections: true
+    theme: flatly
+    highlight: tango
+    code_folding: show
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 10,
+  fig.height = 6,
+  dpi = 150
+)
+
+repo_root <- normalizePath(file.path(getwd(), if (dir.exists("analysis")) "." else ".."))
+source(file.path(repo_root, "analysis", "_sglwqs_review_helpers.R"))
+load_review_packages(c(
+  "MASS", "Matrix", "dplyr", "tidyr", "ggplot2", "knitr", "kableExtra", "pkgload"
+))
+sglwqs_source <- load_review_sglwqs(root = repo_root)
+
+RUN_MODE <- review_run_mode()
+IS_FULL <- identical(RUN_MODE, "full")
+N_WORKERS <- review_workers(RUN_MODE)
+N <- as.integer(Sys.getenv("SGLWQS_ASPARSE_N", if (IS_FULL) 1000 else 180))
+N_SEEDS <- as.integer(Sys.getenv("SGLWQS_ASPARSE_SEEDS", if (IS_FULL) 30 else 4))
+NFOLDS <- as.integer(Sys.getenv("SGLWQS_NFOLDS", if (IS_FULL) 5 else 3))
+NLAMBDA <- as.integer(Sys.getenv("SGLWQS_NLAMBDA", if (IS_FULL) 25 else 8))
+ASPARSE_VALUES <- as.numeric(strsplit(Sys.getenv("SGLWQS_ASPARSE_VALUES", "0.05,0.5,0.95"), ",")[[1]])
+
+groups <- review_groups()
+exposures <- review_exposures(groups)
+true_beta <- attr(simulate_review_mixture(n = 20, seed = 1), "true_beta")
+active_vars <- names(true_beta)[abs(true_beta) > 0]
+null_vars <- names(true_beta)[abs(true_beta) == 0]
+output_dir <- file.path(repo_root, "analysis", "outputs")
+dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
+```
+
+# Configuration
+
+```{r configuration}
+config <- data.frame(
+  item = c("run_mode", "sglwqs_source", "workers", "n", "seeds",
+           "correlation", "asparse_values", "nfolds", "nlambda"),
+  value = c(RUN_MODE, sglwqs_source$source, N_WORKERS, N, N_SEEDS,
+            0.95, paste(ASPARSE_VALUES, collapse = ", "), NFOLDS, NLAMBDA)
+)
+knitr::kable(config, caption = "Analysis configuration") %>%
+  kableExtra::kable_styling(full_width = FALSE)
+```
+
+Reviewer comments used the term "alpha" for the sparse-group lasso group-vs-
+individual mixing parameter. In the analysis version (`sglwqs-main`), that
+parameter is passed through `...` as `asparse` to `sparsegl::cv.sparsegl()`.
+It is distinct from the newer development-branch `alpha_en` elastic-net mixing
+parameter.
+
+# Simulation grid
+
+```{r grid}
+grid <- tidyr::expand_grid(
+  asparse = ASPARSE_VALUES,
+  seed = review_seeds(N_SEEDS)
+) %>%
+  dplyr::mutate(row_id = dplyr::row_number())
+
+knitr::kable(head(grid, 12), caption = "First rows of the asparse grid") %>%
+  kableExtra::kable_styling(full_width = FALSE)
+```
+
+# Run SGL-WQS fits
+
+```{r run-grid}
+run_one_asparse <- function(row) {
+  load_review_sglwqs(root = repo_root)
+  dat <- simulate_review_mixture(
+    n = N,
+    seed = row$seed,
+    correlation = 0.95,
+    outcome = "binomial",
+    scenario = "active"
+  )
+  fit_res <- safe_sglwqs(
+    data = dat,
+    exposures = exposures,
+    groups = groups,
+    family = "binomial",
+    validation = TRUE,
+    bootstrap = FALSE,
+    seed = row$seed + 100000L,
+    nfolds = NFOLDS,
+    nlambda = NLAMBDA,
+    minor_threshold = 0.10,
+    asparse = row$asparse,
+    verbose = FALSE
+  )
+  if (!isTRUE(fit_res$ok)) {
+    return(list(
+      summary = data.frame(
+        asparse = row$asparse, seed = row$seed, ok = FALSE,
+        error = fit_res$error, error_class = classification_from_error(fit_res$error),
+        direction_accuracy_active = NA_real_,
+        active_weight_concentration = NA_real_,
+        null_selected_fraction = NA_real_,
+        n_nonzero = NA_real_,
+        lambda_at_path_edge = NA
+      ),
+      weights = data.frame(),
+      validation = data.frame()
+    ))
+  }
+
+  fit <- fit_res$fit
+  weights <- sglwqs::extract_weights(fit, direction = "both") %>%
+    dplyr::rename(variable = variable, weight = weight, direction = direction) %>%
+    dplyr::mutate(asparse = row$asparse, seed = row$seed)
+
+  wide_w <- weights %>%
+    dplyr::select(variable, direction, weight) %>%
+    tidyr::pivot_wider(names_from = direction, values_from = weight, values_fill = 0)
+  if (!"positive" %in% names(wide_w)) wide_w$positive <- 0
+  if (!"negative" %in% names(wide_w)) wide_w$negative <- 0
+  wide_w <- wide_w %>%
+    dplyr::mutate(
+      true_beta = true_beta[variable],
+      active = abs(true_beta) > 0,
+      detected_direction = dplyr::case_when(
+        positive > negative ~ "positive",
+        negative > positive ~ "negative",
+        TRUE ~ "none"
+      ),
+      true_direction = dplyr::case_when(
+        true_beta > 0 ~ "positive",
+        true_beta < 0 ~ "negative",
+        TRUE ~ "none"
+      ),
+      max_weight = pmax(positive, negative)
+    )
+
+  diag_row <- extract_sglwqs_diagnostics_row(fit)
+  val <- extract_validation_df(fit) %>%
+    dplyr::mutate(asparse = row$asparse, seed = row$seed)
+
+  summary_row <- data.frame(
+    asparse = row$asparse,
+    seed = row$seed,
+    ok = TRUE,
+    error = NA_character_,
+    error_class = NA_character_,
+    direction_accuracy_active = mean(
+      wide_w$detected_direction[wide_w$active] ==
+        wide_w$true_direction[wide_w$active],
+      na.rm = TRUE
+    ),
+    active_weight_concentration =
+      sum(wide_w$max_weight[wide_w$active], na.rm = TRUE) /
+      sum(wide_w$max_weight, na.rm = TRUE),
+    null_selected_fraction = mean(wide_w$max_weight[!wide_w$active] > 1e-6, na.rm = TRUE),
+    n_nonzero = diag_row$n_nonzero,
+    lambda_at_path_edge = diag_row$lambda_at_path_edge,
+    stringsAsFactors = FALSE
+  )
+
+  list(summary = summary_row, weights = weights, validation = val)
+}
+
+results <- review_lapply(split(seq_len(nrow(grid)), seq_len(nrow(grid))), function(i) {
+  run_one_asparse(grid[i, , drop = FALSE])
+}, workers = if (IS_FULL) N_WORKERS else 1L)
+
+summary_df <- dplyr::bind_rows(lapply(results, `[[`, "summary"))
+weights_df <- dplyr::bind_rows(lapply(results, `[[`, "weights"))
+validation_df <- dplyr::bind_rows(lapply(results, `[[`, "validation"))
+
+if (requireNamespace("readr", quietly = TRUE)) {
+  readr::write_csv(summary_df, file.path(output_dir, "asparse_highcorr_summary.csv"))
+  readr::write_csv(weights_df, file.path(output_dir, "asparse_highcorr_weights.csv"))
+  readr::write_csv(validation_df, file.path(output_dir, "asparse_highcorr_validation.csv"))
+} else {
+  utils::write.csv(summary_df, file.path(output_dir, "asparse_highcorr_summary.csv"), row.names = FALSE)
+  utils::write.csv(weights_df, file.path(output_dir, "asparse_highcorr_weights.csv"), row.names = FALSE)
+  utils::write.csv(validation_df, file.path(output_dir, "asparse_highcorr_validation.csv"), row.names = FALSE)
+}
+```
+
+# Failure rate
+
+```{r failure-rate}
+failure_table <- summary_df %>%
+  dplyr::group_by(asparse) %>%
+  dplyr::summarise(
+    attempted = dplyr::n(),
+    succeeded = sum(ok),
+    failed = sum(!ok),
+    failure_rate = failed / attempted,
+    lambda_edge_rate = mean(lambda_at_path_edge, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+knitr::kable(
+  failure_table %>%
+    dplyr::mutate(
+      failure_rate = sprintf("%.1f%%", 100 * failure_rate),
+      lambda_edge_rate = sprintf("%.1f%%", 100 * lambda_edge_rate)
+    ),
+  caption = "SGL-WQS fit failure and selected-lambda edge rates"
+) %>%
+  kableExtra::kable_styling(full_width = FALSE)
+```
+
+# Selection and weight concentration
+
+```{r performance-summary}
+performance_summary <- summary_df %>%
+  dplyr::filter(ok) %>%
+  dplyr::group_by(asparse) %>%
+  dplyr::summarise(
+    direction_accuracy_mean = mean(direction_accuracy_active, na.rm = TRUE),
+    direction_accuracy_sd = stats::sd(direction_accuracy_active, na.rm = TRUE),
+    active_concentration_mean = mean(active_weight_concentration, na.rm = TRUE),
+    active_concentration_sd = stats::sd(active_weight_concentration, na.rm = TRUE),
+    null_selected_mean = mean(null_selected_fraction, na.rm = TRUE),
+    n_nonzero_median = stats::median(n_nonzero, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+knitr::kable(
+  performance_summary %>%
+    dplyr::mutate(
+      direction_accuracy = sprintf("%.1f%% (%.1f%%)",
+                                   100 * direction_accuracy_mean,
+                                   100 * direction_accuracy_sd),
+      active_concentration = sprintf("%.1f%% (%.1f%%)",
+                                     100 * active_concentration_mean,
+                                     100 * active_concentration_sd),
+      null_selected = sprintf("%.1f%%", 100 * null_selected_mean)
+    ) %>%
+    dplyr::select(asparse, direction_accuracy, active_concentration,
+                  null_selected, n_nonzero_median),
+  caption = "Selection performance under r = 0.95"
+) %>%
+  kableExtra::kable_styling(full_width = FALSE)
+```
+
+```{r performance-plot}
+plot_summary <- summary_df %>% dplyr::filter(ok)
+if (nrow(plot_summary) > 0L) {
+  plot_long <- plot_summary %>%
+    dplyr::select(asparse, seed, direction_accuracy_active,
+                  active_weight_concentration, null_selected_fraction) %>%
+    tidyr::pivot_longer(
+      cols = c(direction_accuracy_active, active_weight_concentration,
+               null_selected_fraction),
+      names_to = "metric",
+      values_to = "value"
+    )
+
+  ggplot(plot_long, aes(x = factor(asparse), y = value, fill = factor(asparse))) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.6) +
+    geom_point(position = position_jitter(width = 0.08), size = 1.8, alpha = 0.8) +
+    facet_wrap(~metric, scales = "free_y") +
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+    labs(x = "asparse", y = NULL,
+         title = "SGL-WQS asparse sensitivity at r = 0.95") +
+    theme_minimal() +
+    theme(legend.position = "none")
+} else {
+  cat("No successful asparse fits available for plotting.\n")
+}
+```
+
+# Null-group p-values
+
+```{r null-pfas}
+pfas_val <- validation_df %>%
+  dplyr::filter(group == "PFASs")
+
+pfas_summary <- pfas_val %>%
+  dplyr::group_by(asparse, direction) %>%
+  dplyr::summarise(
+    n_estimable = sum(is.finite(p_value)),
+    median_p = stats::median(p_value, na.rm = TRUE),
+    type1_0_05 = mean(p_value < 0.05, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+knitr::kable(
+  pfas_summary %>%
+    dplyr::mutate(
+      median_p = round(median_p, 3),
+      type1_0_05 = sprintf("%.1f%%", 100 * type1_0_05)
+    ),
+  caption = "Null PFAS validation p-values by asparse"
+) %>%
+  kableExtra::kable_styling(full_width = FALSE)
+```
+
+```{r pfas-plot}
+if (nrow(pfas_val %>% dplyr::filter(is.finite(p_value))) > 0L) {
+  ggplot(pfas_val %>% dplyr::filter(is.finite(p_value)),
+         aes(x = factor(asparse), y = p_value, color = direction)) +
+    geom_hline(yintercept = 0.05, linetype = "dashed", color = "firebrick") +
+    geom_boxplot(outlier.shape = NA) +
+    geom_point(position = position_jitter(width = 0.08), alpha = 0.8) +
+    labs(x = "asparse", y = "PFAS validation p-value",
+         title = "Null-group p-values under high correlation") +
+    theme_minimal() +
+    theme(legend.position = "bottom")
+} else {
+  cat("No finite PFAS validation p-values were available.\n")
+}
+```
+
+# Session information
+
+```{r session-info}
+sessionInfo()
+```

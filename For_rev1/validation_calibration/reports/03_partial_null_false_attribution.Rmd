@@ -1,0 +1,58 @@
+---
+title: "Partial-null False Attribution"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    theme: flatly
+params:
+  profile: "smoke"
+  root: "."
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+Sys.setenv(VALIDATION_CALIBRATION_ROOT = normalizePath(params$root, mustWork = TRUE))
+source(file.path(params$root, "R", "00_paths.R"))
+activate_local_lib()
+source_vc("05_report_helpers.R")
+library(dplyr)
+library(ggplot2)
+profile <- params$profile
+calibration <- read_validation_table("validation_calibration_summary", profile)
+```
+
+# Null Directions in Partial-null Scenarios
+
+```{r}
+partial_null <- calibration |>
+  filter(scenario_family == "partial_binary", is_true_null) |>
+  arrange(n, between_r, group, direction)
+kable_if_rows(compact_columns(partial_null, c(
+  "n", "within_r", "between_r", "group", "direction",
+  "attempted", "fit_failure_rate", "retention_rate",
+  "rejection_rate_unconditional", "rejection_unconditional_lcl",
+  "rejection_unconditional_ucl", "rejection_rate_retained",
+  "null_coverage"
+)), "False attribution among true-null group-directions")
+```
+
+```{r fig.height=5, fig.width=8}
+plot_data <- partial_null |>
+  mutate(setting = paste0("n=", n, ", between=", between_r))
+safe_rate_plot(plot_data, "setting", "rejection_rate_unconditional",
+               title = "Partial-null false attribution")
+```
+
+# Active Directions
+
+```{r}
+active <- calibration |>
+  filter(scenario_family == "partial_binary", !is_true_null) |>
+  arrange(n, between_r, group, direction) |>
+  select(n, within_r, between_r, group, direction, attempted,
+         retention_rate, rejection_rate_retained, estimate_mean,
+         empirical_sd, model_se_mean)
+kable_if_rows(active, "Active-direction summaries")
+```
+

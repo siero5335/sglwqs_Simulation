@@ -1,0 +1,342 @@
+---
+title: "Minor direction threshold sensitivity"
+subtitle: "Controlled minor/major coefficient-mass ratio DGM; SGL-WQS only"
+author: "SGL-WQS reviewer response"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    number_sections: true
+    theme: flatly
+    highlight: tango
+    code_folding: show
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 10,
+  fig.height = 6,
+  dpi = 150
+)
+
+repo_root <- normalizePath(file.path(getwd(), if (dir.exists("analysis")) "." else ".."))
+source(file.path(repo_root, "analysis", "_sglwqs_review_helpers.R"))
+load_review_packages(c(
+  "MASS", "Matrix", "dplyr", "tidyr", "ggplot2", "knitr", "kableExtra", "pkgload"
+))
+sglwqs_source <- load_review_sglwqs(root = repo_root)
+
+RUN_MODE <- review_run_mode()
+IS_FULL <- identical(RUN_MODE, "full")
+N_WORKERS <- review_workers(RUN_MODE)
+N <- as.integer(Sys.getenv("SGLWQS_MINOR_N", if (IS_FULL) 900 else 160))
+N_SEEDS <- as.integer(Sys.getenv("SGLWQS_MINOR_SEEDS", if (IS_FULL) 30 else 4))
+NFOLDS <- as.integer(Sys.getenv("SGLWQS_NFOLDS", if (IS_FULL) 5 else 3))
+NLAMBDA <- as.integer(Sys.getenv("SGLWQS_NLAMBDA", if (IS_FULL) 25 else 8))
+RATIOS <- as.numeric(strsplit(Sys.getenv("SGLWQS_MINOR_RATIOS", "0.05,0.10,0.15,0.25,0.40"), ",")[[1]])
+THRESHOLDS <- as.numeric(strsplit(Sys.getenv("SGLWQS_MINOR_THRESHOLDS", "0,0.10,0.25,0.40"), ",")[[1]])
+
+mix_vars <- paste0("mix_", seq_len(8))
+groups <- list(Mixture = mix_vars)
+output_dir <- file.path(repo_root, "analysis", "outputs")
+dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
+```
+
+# Configuration
+
+```{r configuration}
+config <- data.frame(
+  item = c("run_mode", "sglwqs_source", "workers", "n", "seeds",
+           "true_minor_major_ratios", "thresholds", "nfolds", "nlambda"),
+  value = c(RUN_MODE, sglwqs_source$source, N_WORKERS, N, N_SEEDS,
+            paste(RATIOS, collapse = ", "), paste(THRESHOLDS, collapse = ", "),
+            NFOLDS, NLAMBDA)
+)
+knitr::kable(config, caption = "Analysis configuration") %>%
+  kableExtra::kable_styling(full_width = FALSE)
+```
+
+The data-generating model contains one exposure group with both positive and
+negative coefficients. The negative coefficient mass is scaled so that the
+true minor/major mass ratio is approximately 0.05, 0.10, 0.15, 0.25, or 0.40.
+The default SGL-WQS rule excludes the fitted minor direction from the validation
+GLM when the fitted minor/major mass ratio is below `minor_threshold = 0.10`.
+
+# Simulation grid
+
+```{r grid}
+grid <- tidyr::expand_grid(
+  true_ratio = RATIOS,
+  threshold = THRESHOLDS,
+  seed = review_seeds(N_SEEDS)
+) %>%
+  dplyr::mutate(row_id = dplyr::row_number())
+
+knitr::kable(head(grid, 12), caption = "First rows of the threshold grid") %>%
+  kableExtra::kable_styling(full_width = FALSE)
+```
+
+# Run SGL-WQS fits
+
+```{r run-grid}
+run_one_threshold <- function(row) {
+  load_review_sglwqs(root = repo_root)
+  dat <- simulate_minor_ratio_data(
+    n = N,
+    seed = row$seed,
+    ratio = row$true_ratio,
+    correlation = 0.5,
+    noise_sd = 1.0
+  )
+  fit_res <- safe_sglwqs(
+    data = dat,
+    exposures = mix_vars,
+    groups = groups,
+    family = "gaussian",
+    covariates = c("z1", "z2"),
+    validation = TRUE,
+    bootstrap = FALSE,
+    seed = row$seed + 500000L + round(row$threshold * 1000),
+    nfolds = NFOLDS,
+    nlambda = NLAMBDA,
+    minor_threshold = row$threshold,
+    verbose = FALSE
+  )
+
+  if (!isTRUE(fit_res$ok)) {
+    return(data.frame(
+      true_ratio = row$true_ratio,
+      threshold = row$threshold,
+      seed = row$seed,
+      ok = FALSE,
+      error = fit_res$error,
+      error_class = classification_from_error(fit_res$error),
+      fitted_ratio = NA_real_,
+      fitted_minor_direction = NA_character_,
+      excluded_minor = NA,
+      pos_estimate = NA_real_,
+      pos_pvalue = NA_real_,
+      neg_estimate = NA_real_,
+      neg_pvalue = NA_real_,
+      contrast_estimate = NA_real_,
+      true_contrast = NA_real_,
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  fit <- fit_res$fit
+  pos_mass <- fit$pos_index_sum_by_group$Mixture %||% 0
+  neg_mass <- fit$neg_index_sum_by_group$Mixture %||% 0
+  fitted_ratio <- if (max(pos_mass, neg_mass) > 0) {
+    min(pos_mass, neg_mass) / max(pos_mass, neg_mass)
+  } else {
+    NA_real_
+  }
+  fitted_minor_direction <- if (!is.finite(fitted_ratio)) {
+    NA_character_
+  } else if (pos_mass < neg_mass) {
+    "positive"
+  } else {
+    "negative"
+  }
+
+  gv <- fit$validation_info$group_results$Mixture
+  pos_excluded <- isTRUE(gv$pos_excluded)
+  neg_excluded <- isTRUE(gv$neg_excluded)
+  excluded_minor <- (identical(fitted_minor_direction, "positive") && pos_excluded) ||
+    (identical(fitted_minor_direction, "negative") && neg_excluded)
+
+  true_beta <- attr(dat, "true_beta")
+  true_contrast <- sum(true_beta)
+  contrast_estimate <- sum(c(
+    (gv$pos_estimate %||% NA_real_) * pos_mass,
+    (gv$neg_estimate %||% NA_real_) * neg_mass
+  ), na.rm = TRUE)
+
+  data.frame(
+    true_ratio = row$true_ratio,
+    threshold = row$threshold,
+    seed = row$seed,
+    ok = TRUE,
+    error = NA_character_,
+    error_class = NA_character_,
+    fitted_ratio = fitted_ratio,
+    fitted_minor_direction = fitted_minor_direction,
+    excluded_minor = excluded_minor,
+    pos_estimate = gv$pos_estimate,
+    pos_pvalue = gv$pos_pvalue,
+    neg_estimate = gv$neg_estimate,
+    neg_pvalue = gv$neg_pvalue,
+    contrast_estimate = contrast_estimate,
+    true_contrast = true_contrast,
+    stringsAsFactors = FALSE
+  )
+}
+
+threshold_results <- dplyr::bind_rows(
+  review_lapply(split(seq_len(nrow(grid)), seq_len(nrow(grid))), function(i) {
+    run_one_threshold(grid[i, , drop = FALSE])
+  }, workers = if (IS_FULL) N_WORKERS else 1L)
+)
+
+if (requireNamespace("readr", quietly = TRUE)) {
+  readr::write_csv(threshold_results,
+                   file.path(output_dir, "minor_direction_threshold_results.csv"))
+} else {
+  utils::write.csv(threshold_results,
+                   file.path(output_dir, "minor_direction_threshold_results.csv"),
+                   row.names = FALSE)
+}
+```
+
+# Exclusion behavior
+
+```{r exclusion-summary}
+failure_summary <- threshold_results %>%
+  dplyr::count(ok, error_class, name = "n_runs")
+
+knitr::kable(failure_summary, caption = "Run success/failure counts") %>%
+  kableExtra::kable_styling(full_width = FALSE)
+
+exclusion_summary <- threshold_results %>%
+  dplyr::filter(ok) %>%
+  dplyr::group_by(true_ratio, threshold) %>%
+  dplyr::summarise(
+    n_runs = dplyr::n(),
+    median_fitted_ratio = stats::median(fitted_ratio, na.rm = TRUE),
+    exclusion_rate = mean(excluded_minor, na.rm = TRUE),
+    minor_estimable_rate = mean(
+      dplyr::case_when(
+        fitted_minor_direction == "positive" ~ is.finite(pos_estimate),
+        fitted_minor_direction == "negative" ~ is.finite(neg_estimate),
+        TRUE ~ FALSE
+      ),
+      na.rm = TRUE
+    ),
+    .groups = "drop"
+  )
+
+knitr::kable(
+  exclusion_summary %>%
+    dplyr::mutate(
+      median_fitted_ratio = round(median_fitted_ratio, 3),
+      exclusion_rate = sprintf("%.1f%%", 100 * exclusion_rate),
+      minor_estimable_rate = sprintf("%.1f%%", 100 * minor_estimable_rate)
+    ),
+  caption = "Minor-direction exclusion and estimability by true ratio and threshold"
+) %>%
+  kableExtra::kable_styling(full_width = FALSE)
+```
+
+```{r exclusion-plot}
+plot_excl <- exclusion_summary
+if (nrow(plot_excl) > 0L) {
+  ggplot(plot_excl, aes(x = true_ratio, y = exclusion_rate,
+                        color = factor(threshold), group = threshold)) +
+    geom_line(linewidth = 1) +
+    geom_point(size = 2.5) +
+    scale_x_continuous(labels = scales::percent_format(accuracy = 1)) +
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1),
+                       limits = c(0, 1)) +
+    labs(x = "True minor/major coefficient-mass ratio",
+         y = "Fitted minor direction excluded",
+         color = "threshold",
+         title = "Threshold rule behavior across controlled minor-direction mass") +
+    theme_minimal() +
+    theme(legend.position = "bottom")
+}
+```
+
+# Effect-estimate sensitivity
+
+For this one-group Gaussian DGM, the contrast below is the approximate
+validation-stage effect for increasing all quantized exposures by one unit,
+computed as the sum of each retained direction's validation coefficient times
+its fitted coefficient mass. Rows where a direction is excluded omit that
+direction by design.
+
+```{r contrast-summary}
+contrast_summary <- threshold_results %>%
+  dplyr::filter(ok) %>%
+  dplyr::mutate(
+    bias = contrast_estimate - true_contrast,
+    covered_direction = sign(contrast_estimate) == sign(true_contrast)
+  ) %>%
+  dplyr::group_by(true_ratio, threshold) %>%
+  dplyr::summarise(
+    n_runs = dplyr::n(),
+    true_contrast = mean(true_contrast),
+    mean_estimate = mean(contrast_estimate, na.rm = TRUE),
+    bias = mean(bias, na.rm = TRUE),
+    rmse = sqrt(mean(bias^2, na.rm = TRUE)),
+    direction_agreement = mean(covered_direction, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+knitr::kable(
+  contrast_summary %>%
+    dplyr::mutate(dplyr::across(
+      c(true_contrast, mean_estimate, bias, rmse, direction_agreement),
+      ~ round(.x, 3)
+    )),
+  caption = "Approximate all-exposure contrast by threshold"
+) %>%
+  kableExtra::kable_styling(full_width = FALSE)
+```
+
+```{r contrast-plot}
+if (nrow(threshold_results %>% dplyr::filter(ok)) > 0L) {
+  ggplot(threshold_results %>% dplyr::filter(ok),
+         aes(x = factor(threshold), y = contrast_estimate,
+             fill = factor(threshold))) +
+    geom_hline(aes(yintercept = true_contrast), linetype = "dashed",
+               color = "grey40") +
+    geom_boxplot(outlier.shape = NA, alpha = 0.65) +
+    geom_point(position = position_jitter(width = 0.08), size = 1.5, alpha = 0.8) +
+    facet_wrap(~true_ratio, labeller = label_both) +
+    labs(x = "minor_threshold", y = "Approximate contrast estimate",
+         title = "Effect-estimate sensitivity to minor-direction threshold") +
+    theme_minimal() +
+    theme(legend.position = "none")
+}
+```
+
+# Interpretation target
+
+```{r interpretation-table}
+interpretation <- exclusion_summary %>%
+  dplyr::filter(threshold == 0.10) %>%
+  dplyr::mutate(
+    reviewer_use = dplyr::case_when(
+      true_ratio <= 0.10 ~ "Default threshold usually removes a very small fitted opposite direction.",
+      true_ratio >= 0.15 & true_ratio <= 0.40 ~
+        "Minor direction is material enough that reporting sensitivity analyses is advisable.",
+      TRUE ~ "Intermediate behavior."
+    )
+  ) %>%
+  dplyr::select(true_ratio, median_fitted_ratio, exclusion_rate,
+                minor_estimable_rate, reviewer_use)
+
+knitr::kable(
+  interpretation %>%
+    dplyr::mutate(
+      median_fitted_ratio = round(median_fitted_ratio, 3),
+      exclusion_rate = sprintf("%.1f%%", 100 * exclusion_rate),
+      minor_estimable_rate = sprintf("%.1f%%", 100 * minor_estimable_rate)
+    ),
+  caption = "Default threshold = 0.10 interpretation table"
+) %>%
+  kableExtra::kable_styling(full_width = FALSE)
+```
+
+# Session information
+
+```{r session-info}
+sessionInfo()
+```

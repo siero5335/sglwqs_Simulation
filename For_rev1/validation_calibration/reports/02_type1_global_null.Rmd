@@ -1,0 +1,55 @@
+---
+title: "Validation-stage Type I Error: Global Null"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    theme: flatly
+params:
+  profile: "smoke"
+  root: "."
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+Sys.setenv(VALIDATION_CALIBRATION_ROOT = normalizePath(params$root, mustWork = TRUE))
+source(file.path(params$root, "R", "00_paths.R"))
+activate_local_lib()
+source_vc("05_report_helpers.R")
+library(dplyr)
+library(ggplot2)
+profile <- params$profile
+calibration <- read_validation_table("validation_calibration_summary", profile)
+```
+
+# Global-null Binary Scenarios
+
+```{r}
+global_null <- calibration |>
+  filter(scenario_family == "global_binary", is_true_null) |>
+  arrange(n, within_r, group, direction)
+kable_if_rows(compact_columns(global_null, c(
+  "n", "within_r", "between_r", "group", "direction",
+  "attempted", "fit_failure_rate", "retention_rate",
+  "rejection_rate_unconditional", "rejection_unconditional_lcl",
+  "rejection_unconditional_ucl", "rejection_rate_retained",
+  "null_coverage"
+)), "Global-null Type I error")
+```
+
+```{r fig.height=5, fig.width=8}
+plot_data <- global_null |>
+  mutate(setting = paste0("n=", n, ", r=", within_r))
+safe_rate_plot(plot_data, "setting", "rejection_rate_unconditional",
+               title = "Unconditional rejection rate under the global null")
+```
+
+# Boundary and All-zero Diagnostics
+
+```{r}
+diag_tab <- global_null |>
+  select(n, within_r, group, direction, lambda_boundary_rate, all_zero_rate,
+         median_boot_success_rate, median_runtime_sec)
+kable_if_rows(diag_tab, "Global-null backend diagnostics")
+```
+

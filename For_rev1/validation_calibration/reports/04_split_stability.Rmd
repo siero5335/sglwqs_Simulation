@@ -1,0 +1,45 @@
+---
+title: "Repeated Train/Validation Split Stability"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    theme: flatly
+params:
+  profile: "smoke"
+  root: "."
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+Sys.setenv(VALIDATION_CALIBRATION_ROOT = normalizePath(params$root, mustWork = TRUE))
+source(file.path(params$root, "R", "00_paths.R"))
+activate_local_lib()
+source_vc("05_report_helpers.R")
+library(dplyr)
+library(ggplot2)
+profile <- params$profile
+split <- read_validation_table("validation_split_stability", profile)
+```
+
+# Split Stability Metrics
+
+```{r}
+tab <- split |>
+  arrange(scenario_family, n, group, direction) |>
+  select(
+    scenario_family, n, within_r, between_r, group, direction,
+    split_count, estimable_split_count, retention_rate,
+    p_value_cv, p_value_iqr, p_value_min, p_value_max,
+    positive_sign_rate, negative_sign_rate, rejection_rate
+  )
+kable_if_rows(tab, "Repeated split stability")
+```
+
+```{r fig.height=5, fig.width=8}
+plot_data <- split |>
+  mutate(setting = paste0(scenario_family, ", n=", n))
+safe_rate_plot(plot_data, "setting", "p_value_cv",
+               title = "Validation p-value coefficient of variation")
+```
+

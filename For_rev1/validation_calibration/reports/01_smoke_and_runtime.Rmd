@@ -1,0 +1,76 @@
+---
+title: "Validation Calibration Smoke and Runtime"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    theme: flatly
+params:
+  profile: "smoke"
+  root: "."
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+Sys.setenv(VALIDATION_CALIBRATION_ROOT = normalizePath(params$root, mustWork = TRUE))
+source(file.path(params$root, "R", "00_paths.R"))
+activate_local_lib()
+source_vc("05_report_helpers.R")
+library(dplyr)
+library(ggplot2)
+profile <- params$profile
+directions <- read_validation_table("validation_replicate_results", profile)
+diagnostics <- read_validation_table("validation_diagnostics", profile)
+runtime <- read_validation_table("validation_runtime_projection", profile)
+calibration <- read_validation_table("validation_calibration_summary", profile)
+```
+
+# Run Overview
+
+```{r}
+overview <- diagnostics |>
+  summarise(
+    jobs = n(),
+    successful = sum(fit_success, na.rm = TRUE),
+    failed = sum(!fit_success, na.rm = TRUE),
+    median_runtime_sec = median(runtime_sec, na.rm = TRUE),
+    median_boot_success_rate = median(boot_success_rate, na.rm = TRUE),
+    lambda_boundary_rate = mean(selected_lambda_at_path_boundary, na.rm = TRUE),
+    all_zero_rate = mean(all_zero_exposure, na.rm = TRUE)
+  )
+kable_if_rows(overview, "Smoke run overview")
+```
+
+# Failure and Warning Classes
+
+```{r}
+failures <- diagnostics |>
+  count(fit_success, error_class, sort = TRUE)
+kable_if_rows(failures, "Failure/warning classification")
+```
+
+# Runtime Projection
+
+```{r}
+kable_if_rows(compact_columns(runtime, c(
+  "profile", "job_type", "observed_jobs", "successful_jobs",
+  "median_runtime_sec", "p90_runtime_sec",
+  "production_jobs", "projected_wall_hours_8_workers"
+)), "Runtime projection using observed median runtime")
+```
+
+# Calibration Snapshot
+
+```{r}
+snap <- calibration |>
+  filter(is_true_null) |>
+  arrange(scenario_family, n, group, direction) |>
+  select(
+    scenario_family, n, within_r, between_r, group, direction,
+    attempted, fit_failure_rate, retention_rate,
+    rejection_rate_unconditional, rejection_unconditional_lcl,
+    rejection_unconditional_ucl, null_coverage
+  )
+kable_if_rows(snap, "Null-direction calibration snapshot")
+```
+

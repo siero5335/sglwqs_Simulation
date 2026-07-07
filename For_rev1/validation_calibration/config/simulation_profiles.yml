@@ -1,0 +1,84 @@
+defaults:
+  seed_start: 710000
+  n_quantiles: 4
+  train_prop: 0.60
+  bootstrap: true
+  lambda: "lambda.min"
+  nfolds: 10
+  nlambda: 100
+  n_boot: 200
+  parallel_inside_fit: false
+  minor_threshold: 0.10
+  asparse: 0.05
+  alpha: 0.05
+  checkpoint_interval: 25
+  cleanup_checkpoint: false
+  include_wqs_comparator: false
+  split_n_boot: 200
+  split_reps: 100
+  reps:
+    global_binary: 500
+    partial_binary: 300
+    gaussian_null: 200
+
+profiles:
+  smoke:
+    nfolds: 3
+    nlambda: 20
+    n_boot: 5
+    checkpoint_interval: 2
+    split_n_boot: 5
+    split_reps: 3
+    reps:
+      global_binary: 2
+      partial_binary: 2
+      gaussian_null: 2
+
+  pilot_fast:
+    nfolds: 5
+    nlambda: 40
+    n_boot: 25
+    checkpoint_interval: 5
+    split_n_boot: 25
+    split_reps: 10
+    reps:
+      global_binary: 10
+      partial_binary: 10
+      gaussian_null: 6
+
+  pilot_runtime:
+    nfolds: 5
+    nlambda: 60
+    n_boot: 50
+    checkpoint_interval: 10
+    split_n_boot: 50
+    split_reps: 20
+    reps:
+      global_binary: 20
+      partial_binary: 20
+      gaussian_null: 10
+
+  production:
+    nfolds: 10
+    nlambda: 100
+    n_boot: 200
+    checkpoint_interval: 25
+    split_n_boot: 200
+    split_reps: 100
+    reps:
+      global_binary: 500
+      partial_binary: 300
+      gaussian_null: 200
+
+  production_extended:
+    nfolds: 10
+    nlambda: 100
+    n_boot: 200
+    checkpoint_interval: 25
+    split_n_boot: 200
+    split_reps: 100
+    include_wqs_comparator: true
+    reps:
+      global_binary: 500
+      partial_binary: 300
+      gaussian_null: 200

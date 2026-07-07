@@ -1,0 +1,13 @@
+"p","Method","Attempts","Failures","Failure_Rate"
+50,"SGL-WQS",30,0,0
+50,"gWQS",30,0,0
+50,"groupWQS",30,0,0
+50,"qgcomp",30,0,0
+100,"SGL-WQS",30,0,0
+100,"gWQS",30,0,0
+100,"groupWQS",30,0,0
+100,"qgcomp",30,0,0
+200,"SGL-WQS",30,0,0
+200,"gWQS",30,0,0
+200,"groupWQS",30,0,0
+200,"qgcomp",30,0,0

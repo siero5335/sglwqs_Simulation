@@ -1,0 +1,47 @@
+---
+title: "Runtime Projection"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    theme: flatly
+params:
+  profile: "smoke"
+  root: "."
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+Sys.setenv(VALIDATION_CALIBRATION_ROOT = normalizePath(params$root, mustWork = TRUE))
+source(file.path(params$root, "R", "00_paths.R"))
+activate_local_lib()
+source_vc("05_report_helpers.R")
+library(dplyr)
+profile <- params$profile
+runtime <- read_validation_table("validation_runtime_projection", profile)
+diagnostics <- read_validation_table("validation_diagnostics", profile)
+```
+
+# Runtime Projection
+
+```{r}
+kable_if_rows(compact_columns(runtime, c(
+  "profile", "job_type", "observed_jobs", "successful_jobs",
+  "median_runtime_sec", "p90_runtime_sec",
+  "production_jobs", "projected_core_hours",
+  "projected_wall_hours_8_workers"
+)), "Runtime projection")
+```
+
+# Slowest Jobs
+
+```{r}
+slow <- diagnostics |>
+  arrange(desc(runtime_sec)) |>
+  select(job_id, fit_success, runtime_sec, n_boot_requested,
+         boot_success_rate, lambda_path_length, selected_lambda,
+         selected_lambda_at_path_boundary, all_zero_exposure) |>
+  head(20)
+kable_if_rows(slow, "Slowest jobs")
+```
+

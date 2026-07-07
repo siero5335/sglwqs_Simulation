@@ -1,0 +1,345 @@
+---
+title: "Validation Split-Stability Standalone Run"
+subtitle: "SGL-WQS only; fixed data with repeated train/validation splits"
+author: "SGL-WQS reviewer response"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    number_sections: true
+    theme: flatly
+    highlight: tango
+    df_print: paged
+params:
+  profile: "production"
+  root: "../../validation_calibration"
+  workers: 8
+  run_analysis: true
+  force: false
+  scenario_filter: "all"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 10,
+  fig.height = 6,
+  dpi = 150
+)
+
+Sys.setenv(
+  OMP_NUM_THREADS = "1",
+  OPENBLAS_NUM_THREADS = "1",
+  MKL_NUM_THREADS = "1",
+  VECLIB_MAXIMUM_THREADS = "1"
+)
+
+input_path <- normalizePath(knitr::current_input(dir = TRUE), mustWork = TRUE)
+analysis_dir <- dirname(input_path)
+repo_root <- dirname(analysis_dir)
+
+resolve_existing_path <- function(path) {
+  if (grepl("^/", path)) {
+    return(normalizePath(path, mustWork = TRUE))
+  }
+  candidates <- c(
+    file.path(getwd(), path),
+    file.path(repo_root, path),
+    file.path(analysis_dir, path)
+  )
+  hit <- candidates[dir.exists(candidates) | file.exists(candidates)]
+  if (!length(hit)) {
+    stop("Could not resolve path: ", path, call. = FALSE)
+  }
+  normalizePath(hit[[1]], mustWork = TRUE)
+}
+
+root_path <- resolve_existing_path(params$root)
+
+Sys.setenv(
+  VALIDATION_CALIBRATION_ROOT = root_path,
+  VALIDATION_CALIBRATION_PROFILE = params$profile
+)
+
+source(file.path(root_path, "R", "00_paths.R"))
+activate_local_lib()
+source_vc("01_profiles.R")
+source_vc("02_dgp.R")
+source_vc("03_fit_sglwqs.R")
+source_vc("04_summaries.R")
+
+required_packages <- c("dplyr", "tidyr", "ggplot2", "knitr", "readr", "scales")
+missing_packages <- required_packages[
+  !vapply(required_packages, requireNamespace, logical(1), quietly = TRUE)
+]
+if (length(missing_packages)) {
+  stop(
+    "Install required packages before rendering: ",
+    paste(missing_packages, collapse = ", "),
+    call. = FALSE
+  )
+}
+
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(tidyr)
+  library(ggplot2)
+})
+
+profile <- get_profile(params$profile)
+WORKERS <- as.integer(Sys.getenv("SGLWQS_SPLIT_WORKERS", params$workers))
+WORKERS <- max(WORKERS, 1L)
+
+parse_scenarios <- function(x) {
+  if (length(x) == 1L && identical(tolower(x), "all")) {
+    return(character(0))
+  }
+  unique(trimws(unlist(strsplit(paste(x, collapse = ","), ",", fixed = TRUE))))
+}
+
+scenario_filter <- parse_scenarios(params$scenario_filter)
+
+manifest_path <- function(job) {
+  vc_file(
+    "output", "manifests", profile$name, job$job_type,
+    paste0(job$job_id, ".rds")
+  )
+}
+
+read_split_results <- function(paths) {
+  if (!length(paths)) {
+    return(list())
+  }
+  lapply(paths, readRDS)
+}
+
+run_split_worker <- function(job, root_path, profile_name) {
+  Sys.setenv(
+    VALIDATION_CALIBRATION_ROOT = root_path,
+    VALIDATION_CALIBRATION_PROFILE = profile_name,
+    OMP_NUM_THREADS = "1",
+    OPENBLAS_NUM_THREADS = "1",
+    MKL_NUM_THREADS = "1",
+    VECLIB_MAXIMUM_THREADS = "1"
+  )
+  source(file.path(root_path, "R", "00_paths.R"), chdir = TRUE)
+  activate_local_lib()
+  source_vc("01_profiles.R")
+  source_vc("02_dgp.R")
+  source_vc("03_fit_sglwqs.R")
+  prof <- get_profile(profile_name)
+  run_sglwqs_job(job, prof)
+}
+```
+
+# Configuration
+
+```{r configuration}
+split_jobs <- make_split_stability_jobs(profile)
+if (length(scenario_filter)) {
+  split_jobs <- split_jobs |>
+    filter(.data$scenario_id %in% scenario_filter)
+}
+
+split_jobs <- split_jobs |>
+  mutate(path = vapply(split(seq_len(nrow(split_jobs)), seq_len(nrow(split_jobs))), function(i) {
+    manifest_path(split_jobs[i, , drop = FALSE])
+  }, character(1)))
+
+scenario_table <- split_jobs |>
+  distinct(
+    scenario_id, scenario_family, effect, outcome_family,
+    n, within_r, between_r
+  ) |>
+  arrange(scenario_family, n)
+
+config <- data.frame(
+  item = c(
+    "profile", "workers", "run_analysis", "force",
+    "validation_calibration_root", "SGLWQS_SOURCE",
+    "split_reps_per_scenario", "split_n_boot", "train_prop",
+    "n_quantiles", "nfolds", "nlambda", "lambda",
+    "minor_threshold", "asparse"
+  ),
+  value = c(
+    profile$name, WORKERS, params$run_analysis, params$force,
+    root_path, Sys.getenv("SGLWQS_SOURCE", unset = "(default from 00_paths.R)"),
+    profile$split_reps, profile$split_n_boot, profile$train_prop,
+    profile$n_quantiles, profile$nfolds, profile$nlambda, profile$lambda,
+    profile$minor_threshold, profile$asparse
+  )
+)
+
+knitr::kable(config, caption = "Run configuration")
+knitr::kable(scenario_table, caption = "Split-stability scenarios")
+```
+
+# Run Or Resume Split Jobs
+
+```{r run-or-resume}
+completed_before <- file.exists(split_jobs$path)
+completion_before <- split_jobs |>
+  mutate(completed = completed_before) |>
+  count(scenario_id, completed, name = "n") |>
+  tidyr::pivot_wider(
+    names_from = completed,
+    values_from = n,
+    values_fill = 0
+  )
+knitr::kable(completion_before, caption = "Completion before this render")
+
+jobs_to_run <- if (isTRUE(params$force)) {
+  split_jobs
+} else {
+  split_jobs[!completed_before, , drop = FALSE]
+}
+
+cat("Total split jobs selected:", nrow(split_jobs), "\n")
+cat("Existing manifests:", sum(completed_before), "\n")
+cat("Jobs to run now:", nrow(jobs_to_run), "\n")
+
+if (isTRUE(params$run_analysis) && nrow(jobs_to_run) > 0L) {
+  job_list <- split(jobs_to_run, seq_len(nrow(jobs_to_run)))
+  if (WORKERS > 1L) {
+    if (.Platform$OS.type == "unix") {
+      invisible(parallel::mclapply(
+        job_list,
+        run_split_worker,
+        root_path = root_path,
+        profile_name = profile$name,
+        mc.cores = WORKERS,
+        mc.preschedule = FALSE
+      ))
+    } else {
+      cl <- parallel::makeCluster(WORKERS)
+      on.exit(parallel::stopCluster(cl), add = TRUE)
+      invisible(parallel::parLapplyLB(
+        cl,
+        job_list,
+        run_split_worker,
+        root_path = root_path,
+        profile_name = profile$name
+      ))
+    }
+  } else {
+    invisible(lapply(
+      job_list,
+      run_split_worker,
+      root_path = root_path,
+      profile_name = profile$name
+    ))
+  }
+}
+
+completed_after <- file.exists(split_jobs$path)
+completion_after <- split_jobs |>
+  mutate(completed = completed_after) |>
+  count(scenario_id, completed, name = "n") |>
+  tidyr::pivot_wider(
+    names_from = completed,
+    values_from = n,
+    values_fill = 0
+  )
+knitr::kable(completion_after, caption = "Completion after this render")
+```
+
+# Collect Results
+
+```{r collect-results}
+result_paths <- split_jobs$path[file.exists(split_jobs$path)]
+results <- read_split_results(result_paths)
+
+if (!length(results)) {
+  cat("No split-stability manifests are available yet.\n")
+  knitr::knit_exit()
+}
+
+directions <- bind_direction_results(results)
+diagnostics <- bind_diagnostics(results)
+split_summary <- summarize_split_stability(directions)
+
+table_dir <- vc_file("output", "tables")
+dir.create(table_dir, recursive = TRUE, showWarnings = FALSE)
+
+direction_path <- file.path(
+  table_dir,
+  paste0("split_stability_direction_results_", profile$name, ".csv")
+)
+diagnostic_path <- file.path(
+  table_dir,
+  paste0("split_stability_diagnostics_", profile$name, ".csv")
+)
+summary_path <- file.path(
+  table_dir,
+  paste0("split_stability_summary_", profile$name, ".csv")
+)
+completion_path <- file.path(
+  table_dir,
+  paste0("split_stability_completion_", profile$name, ".csv")
+)
+
+readr::write_csv(directions, direction_path, na = "")
+readr::write_csv(diagnostics, diagnostic_path, na = "")
+readr::write_csv(split_summary, summary_path, na = "")
+readr::write_csv(completion_after, completion_path, na = "")
+
+cat("Direction-level results:", normalizePath(direction_path, mustWork = FALSE), "\n")
+cat("Diagnostics:", normalizePath(diagnostic_path, mustWork = FALSE), "\n")
+cat("Summary:", normalizePath(summary_path, mustWork = FALSE), "\n")
+cat("Completion:", normalizePath(completion_path, mustWork = FALSE), "\n")
+```
+
+# Split-Stability Summary
+
+```{r summary-table}
+summary_table <- split_summary |>
+  arrange(scenario_family, n, group, direction) |>
+  select(
+    scenario_id, n, within_r, between_r, group, direction, is_true_null,
+    split_count, estimable_split_count, retention_rate,
+    p_value_cv, p_value_iqr, p_value_min, p_value_max,
+    positive_sign_rate, negative_sign_rate, rejection_rate
+  )
+
+knitr::kable(
+  summary_table |>
+    mutate(
+      retention_rate = round(retention_rate, 3),
+      p_value_cv = round(p_value_cv, 3),
+      p_value_iqr = round(p_value_iqr, 3),
+      p_value_min = round(p_value_min, 3),
+      p_value_max = round(p_value_max, 3),
+      positive_sign_rate = round(positive_sign_rate, 3),
+      negative_sign_rate = round(negative_sign_rate, 3),
+      rejection_rate = round(rejection_rate, 3)
+    ),
+  caption = "Validation-stage p-value stability across repeated splits"
+)
+```
+
+```{r p-value-cv-plot}
+plot_data <- split_summary |>
+  mutate(setting = paste0(scenario_family, ", n=", n))
+
+ggplot(plot_data, aes(x = interaction(group, direction, sep = " / "), y = p_value_cv)) +
+  geom_col(fill = "#4C78A8", width = 0.7) +
+  facet_wrap(~ setting, scales = "free_y") +
+  coord_flip() +
+  labs(x = NULL, y = "p-value CV", title = "Validation p-value coefficient of variation") +
+  theme_minimal()
+```
+
+```{r rejection-rate-plot}
+ggplot(plot_data, aes(x = interaction(group, direction, sep = " / "), y = rejection_rate, fill = is_true_null)) +
+  geom_col(width = 0.7) +
+  geom_hline(yintercept = 0.05, linetype = "dashed", color = "firebrick") +
+  facet_wrap(~ setting) +
+  coord_flip() +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = NULL, y = "Validation-stage rejection rate", fill = "True null") +
+  theme_minimal()
+```

@@ -1,0 +1,46 @@
+---
+title: "Gaussian Null Sensitivity"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    theme: flatly
+params:
+  profile: "smoke"
+  root: "."
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+Sys.setenv(VALIDATION_CALIBRATION_ROOT = normalizePath(params$root, mustWork = TRUE))
+source(file.path(params$root, "R", "00_paths.R"))
+activate_local_lib()
+source_vc("05_report_helpers.R")
+library(dplyr)
+library(ggplot2)
+profile <- params$profile
+calibration <- read_validation_table("validation_calibration_summary", profile)
+```
+
+# Gaussian-null Scenarios
+
+```{r}
+gauss <- calibration |>
+  filter(scenario_family == "gaussian_null", is_true_null) |>
+  arrange(within_r, group, direction)
+kable_if_rows(compact_columns(gauss, c(
+  "n", "within_r", "between_r", "group", "direction",
+  "attempted", "fit_failure_rate", "retention_rate",
+  "rejection_rate_unconditional", "rejection_unconditional_lcl",
+  "rejection_unconditional_ucl", "null_coverage",
+  "lambda_boundary_rate", "all_zero_rate"
+)), "Gaussian-null sensitivity")
+```
+
+```{r fig.height=5, fig.width=8}
+plot_data <- gauss |>
+  mutate(setting = paste0("r=", within_r))
+safe_rate_plot(plot_data, "setting", "rejection_rate_unconditional",
+               title = "Gaussian-null rejection rate")
+```
+

@@ -1,0 +1,92 @@
+---
+title: "Validation-stage Calibration Combined Report"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    theme: flatly
+params:
+  profile: "smoke"
+  root: "."
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+Sys.setenv(VALIDATION_CALIBRATION_ROOT = normalizePath(params$root, mustWork = TRUE))
+source(file.path(params$root, "R", "00_paths.R"))
+activate_local_lib()
+source_vc("05_report_helpers.R")
+library(dplyr)
+library(ggplot2)
+profile <- params$profile
+calibration <- read_validation_table("validation_calibration_summary", profile)
+split <- read_validation_table("validation_split_stability", profile)
+runtime <- read_validation_table("validation_runtime_projection", profile)
+diagnostics <- read_validation_table("validation_diagnostics", profile)
+```
+
+# Executive Tables
+
+```{r}
+global_tab <- calibration |>
+  filter(scenario_family == "global_binary", is_true_null) |>
+  group_by(n, within_r) |>
+  summarise(
+    attempted = sum(attempted),
+    fit_failure_rate = mean(fit_failure_rate, na.rm = TRUE),
+    retention_rate = mean(retention_rate, na.rm = TRUE),
+    rejection_rate = mean(rejection_rate_unconditional, na.rm = TRUE),
+    null_coverage = mean(null_coverage, na.rm = TRUE),
+    .groups = "drop"
+  )
+kable_if_rows(global_tab, "Global-null summary")
+```
+
+```{r}
+partial_tab <- calibration |>
+  filter(scenario_family == "partial_binary", is_true_null) |>
+  group_by(n, between_r, group) |>
+  summarise(
+    attempted = sum(attempted),
+    fit_failure_rate = mean(fit_failure_rate, na.rm = TRUE),
+    retention_rate = mean(retention_rate, na.rm = TRUE),
+    rejection_rate = mean(rejection_rate_unconditional, na.rm = TRUE),
+    null_coverage = mean(null_coverage, na.rm = TRUE),
+    .groups = "drop"
+  )
+kable_if_rows(partial_tab, "Partial-null false-attribution summary")
+```
+
+```{r}
+split_tab <- split |>
+  group_by(scenario_family, n) |>
+  summarise(
+    estimable_split_rate = sum(estimable_split_count) / sum(split_count),
+    median_p_value_cv = median(p_value_cv, na.rm = TRUE),
+    median_p_value_iqr = median(p_value_iqr, na.rm = TRUE),
+    mean_retention_rate = mean(retention_rate, na.rm = TRUE),
+    .groups = "drop"
+  )
+kable_if_rows(split_tab, "Split-stability summary")
+```
+
+# Diagnostics
+
+```{r}
+diag_tab <- diagnostics |>
+  summarise(
+    jobs = n(),
+    successful = sum(fit_success, na.rm = TRUE),
+    failed = sum(!fit_success, na.rm = TRUE),
+    median_runtime_sec = median(runtime_sec, na.rm = TRUE),
+    lambda_boundary_rate = mean(selected_lambda_at_path_boundary, na.rm = TRUE),
+    all_zero_rate = mean(all_zero_exposure, na.rm = TRUE),
+    median_boot_success_rate = median(boot_success_rate, na.rm = TRUE)
+  )
+kable_if_rows(diag_tab, "Overall diagnostics")
+```
+
+```{r}
+kable_if_rows(runtime, "Runtime projection")
+```
+

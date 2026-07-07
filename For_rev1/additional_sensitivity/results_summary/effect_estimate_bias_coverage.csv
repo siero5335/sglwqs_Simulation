@@ -1,0 +1,121 @@
+method,seed,true_target,estimate,std_error,ci_lower,ci_upper,covered,ok,error,estimand_note,error_class
+qgcomp,71,0.28,0.49577522315127,0.16244773858169173,0.17738350616117649,0.8141669401413635,TRUE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,1071,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,2071,0.28,0.3224247663090376,0.23608493337398084,-0.1402932003965029,0.7851427330145782,TRUE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,3071,0.28,0.08264796795690293,0.027650205758232963,0.02845456050564433,0.13684137540816155,FALSE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA
+qgcomp,42,0.28,0.1219044320742662,0.16363689197580455,-0.19881798274038198,0.4426268468889144,TRUE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,1042,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,2042,0.28,-0.044661808694623134,0.21786107049329576,-0.4716616604948245,0.3823380431055783,TRUE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,3042,0.28,0,0,0,0,FALSE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA
+qgcomp,123,0.28,0.1742441125796353,0.16298240033832678,-0.1451955221973738,0.4936837473566444,TRUE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,1123,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,2123,0.28,0.15140604799416743,0.2364524263258026,-0.3120321916615161,0.6148442876498509,TRUE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,3123,0.28,0.060939455421385486,0.04217015048794073,-0.021712520757612513,0.14359143160038348,FALSE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA
+qgcomp,256,0.28,0.11717032094817362,0.1598653393620569,-0.1961599865777313,0.43050062847407855,TRUE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,1256,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,2256,0.28,0.10301416669313929,0.2417548733593755,-0.37081667817827835,0.5768450115645569,TRUE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,3256,0.28,0.10960157905722347,0.05219336773271974,0.007304458069237824,0.2118987000452091,FALSE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA
+qgcomp,314,0.28,0.005863764811035059,0.16492246647490036,-0.317378329721284,0.3291058593433541,TRUE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,1314,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,2314,0.28,-0.034643114902267236,0.2592678876332203,-0.5427988370111565,0.473512607206622,TRUE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,3314,0.28,0.02192083016513306,0.06227019145001729,-0.10012650238731478,0.1439681627175809,FALSE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA
+qgcomp,500,0.28,0.11211189998424066,0.16418461725255962,-0.20968403664626967,0.43390783661475096,TRUE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,1500,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,2500,0.28,0.24247780809266783,0.25067432672208456,-0.2488348441314442,0.7337904603167799,TRUE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,3500,0.28,0.03736195429533732,0.0598241220246284,-0.07989117027966372,0.15461507887033835,FALSE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA
+qgcomp,617,0.28,0.34350859662517347,0.16143407779480048,0.027103618269927354,0.6599135749804196,TRUE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,1617,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,2617,0.28,0.29424685396563277,0.2597091182270454,-0.21477366421603095,0.8032673721472965,TRUE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,3617,0.28,0.02864607573918808,0.021621051865590366,-0.013730407225241568,0.07102255870361773,FALSE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA
+qgcomp,789,0.28,0.12049728986071262,0.16840321123946644,-0.20956693904953233,0.45056151877095757,TRUE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,1789,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,2789,0.28,0.049540552662304754,0.2508818938943577,-0.4421789237438355,0.5412600290684451,TRUE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,3789,0.28,0.009532055463466029,0.02408854958158006,-0.03768063415623826,0.05674474508317032,FALSE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA
+qgcomp,888,0.28,0.396476042176831,0.1667498067343092,0.06965242654857057,0.7232996578050914,TRUE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,1888,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,2888,0.28,0.5491874127336174,0.251750357413444,0.055765779108181146,1.0426090463590536,TRUE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,3888,0.28,0.06887785386823396,0.024178126186835947,0.021489597328370767,0.11626611040809715,FALSE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA
+qgcomp,999,0.28,0.4913834430860811,0.16662457751281093,0.16480527222176922,0.817961613950393,TRUE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,1999,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,2999,0.28,0.5595740719296662,0.2501528611653691,0.06928347341589464,1.0498646704434378,TRUE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,3999,0.28,0,0,0,0,FALSE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA
+qgcomp,1001,0.28,0.1607796794061579,0.1603914409264562,-0.15358176823817982,0.4751411270504956,TRUE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,2001,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,3001,0.28,0.1144682584566496,0.25208602908003824,-0.3796112795459419,0.6085477964592412,TRUE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,4001,0.28,0.03712232446428107,0.014358882477040553,0.008979431951038317,0.06526521697752383,FALSE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA
+qgcomp,1123,0.28,0.32651969604884923,0.16686741206496006,-5.34421791876849e-4,0.6535738138895753,TRUE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,2123,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,3123,0.28,0.012890229539488374,0.23697687871817702,-0.45157591791685486,0.4773563769958316,TRUE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,4123,0.28,0.07570589153828496,0.02558614447858649,0.02555796985701709,0.12585381321955283,FALSE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA
+qgcomp,1234,0.28,0.37767814210867706,0.1657226682128821,0.052867680989547416,0.7024886032278067,TRUE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,2234,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,3234,0.28,-0.05094821530596125,0.2558695966886737,-0.5524434095545506,0.4505469789426281,TRUE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,4234,0.28,0.1831884143976713,0.03494850347211775,0.1146906062787475,0.2516862225165951,FALSE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA
+qgcomp,1357,0.28,0.24591130173398013,0.15728533551214316,-0.06236229116611913,0.5541848946340794,TRUE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,2357,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,3357,0.28,-0.3353426611206823,0.24588135177387335,-0.8172612550674976,0.14657593282613307,FALSE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,4357,0.28,0.02719825157843681,0.054294030663383654,-0.07921609309730845,0.13361259625418206,FALSE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA
+qgcomp,1500,0.28,0.1287778662110838,0.16823829170663088,-0.20096312635445626,0.4585188587766239,TRUE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,2500,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,3500,0.28,0.28745702255592537,0.2551163036203016,-0.21256174440885095,0.7874757895207016,TRUE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,4500,0.28,0.05114311236233786,0.02489415600554327,0.00235146316595157,0.09993476155872415,FALSE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA
+qgcomp,1618,0.28,0.2814888151338014,0.16205724342689937,-0.03613754541676162,0.5991151756843645,TRUE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,2618,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,3618,0.28,0.6341503155868127,0.24631684855300595,0.15137816363751427,1.1169224675361111,TRUE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,4618,0.28,0.09114234246095956,0.0633732187778099,-0.033066883927925256,0.21535156884984438,FALSE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA
+qgcomp,1729,0.28,0.008608773859823886,0.16952903430137123,-0.323662027704719,0.3408795754243668,TRUE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,2729,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,3729,0.28,0.527053558418332,0.264463567952928,0.008714490007632025,1.045392626829032,TRUE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,4729,0.28,0.07198960788150152,0.06005774400459104,-0.04572140736022323,0.18970062312322628,FALSE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA
+qgcomp,1847,0.28,0.45766167053334805,0.16659246361923888,0.1311464417438407,0.7841768993228554,TRUE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,2847,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,3847,0.28,0.3030380933696716,0.24246745041982823,-0.1721893768764428,0.778265563615786,TRUE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,4847,0.28,0.06593157132471011,0.022345151665382628,0.02213587883147497,0.10972726381794526,FALSE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA
+qgcomp,1963,0.28,0.2281079177141645,0.1632626919516155,-0.09188107853005911,0.5480969139583881,TRUE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,2963,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,3963,0.28,0.28323138021431316,0.23123413329776604,-0.16997919304564219,0.7364419534742686,TRUE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,4963,0.28,0.09637605090666186,0.044218621011993094,0.009709146277129349,0.18304295553619437,FALSE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA
+qgcomp,2048,0.28,0.08322483280410337,0.16404864475837988,-0.2383046026349266,0.4047542682431333,TRUE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,3048,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,4048,0.28,0.16870947038137793,0.24471135661314208,-0.31091597518831793,0.6483349159510738,TRUE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,5048,0.28,0.03570726968767907,0.024326996868841603,-0.01197276802726912,0.08338730740262726,FALSE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA
+qgcomp,2222,0.28,0.328240168809979,0.15714548611074966,0.02024067569987048,0.6362396619200876,TRUE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,3222,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,4222,0.28,0.5662997115435346,0.2292029883110426,0.11707010930493628,1.015529313782133,TRUE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,5222,0.28,0.052272503004149186,0.04000529965897791,-0.026136443518179987,0.13068144952647837,FALSE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA
+qgcomp,2345,0.28,0.44459576868733097,0.16796772427319823,0.11538507854670832,0.7738064588279536,TRUE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,3345,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,4345,0.28,0.6139094161004497,0.25116654518831305,0.12163203341000428,1.106186798790895,TRUE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,5345,0.28,0.11639025551956117,0.05797616963048372,0.0027590510822282643,0.23002145995689408,FALSE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA
+qgcomp,2500,0.28,0.4480797648832334,0.16686408220922294,0.12103217343982581,0.775127356326641,TRUE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,3500,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,4500,0.28,0.3444253606355722,0.25923708687583097,-0.1636699930981374,0.8525207143692819,TRUE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,5500,0.28,0.24182993702209404,0.11324167657841878,0.019880329379460326,0.46377954466472776,TRUE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA
+qgcomp,2718,0.28,0.29590460978111366,0.16116507393986307,-0.019973130706752662,0.61178235026898,TRUE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,3718,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,4718,0.28,0.04040402747827698,0.24676093542948263,-0.44323851875492265,0.5240465737114766,TRUE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,5718,0.28,0.0889734979697709,0.0553053088817705,-0.019422915592362408,0.1973699115319042,FALSE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA
+qgcomp,2801,0.28,0.36399060386366155,0.15846519013902965,0.05340453838787179,0.6745766693394513,TRUE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,3801,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,4801,0.28,0.09538235150750189,0.241034048188976,-0.37703570199078273,0.5678004050057865,TRUE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,5801,0.28,0.06606445529327531,0.05057379035076886,-0.033058352355910925,0.16518726294246155,FALSE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA
+qgcomp,3001,0.28,0.18966145008174107,0.16520677514419815,-0.13413787920289422,0.5134607793663764,TRUE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,4001,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,5001,0.28,0.1646716786562219,0.24393848196969717,-0.3134389604477577,0.6427823177602014,TRUE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,6001,0.28,0.013982753576720427,0.021325880930557907,-0.027815204985762586,0.055780712139203444,FALSE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA
+qgcomp,3141,0.28,0.027196851564438847,0.16869800958969228,-0.30344517149495054,0.35783887462382824,TRUE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,4141,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,5141,0.28,0.003987232469195412,0.25965015487413423,-0.5049177196643547,0.5128921846027455,TRUE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,6141,0.28,0,0,0,0,FALSE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA
+qgcomp,3333,0.28,-0.05267667934533486,0.16091970345695622,-0.3680735025238346,0.26272014383316483,FALSE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,4333,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,5333,0.28,0.03771255593737991,0.23408956096869876,-0.4210945527180627,0.49651966459282254,TRUE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,6333,0.28,0,0,0,0,FALSE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA
+qgcomp,3500,0.28,0.4107806559107638,0.16700161089529775,0.08346351319580841,0.7380977986257191,TRUE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,4500,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,5500,0.28,0.21235832430327004,0.25644182977909613,-0.2902584261933093,0.7149750747998495,TRUE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,6500,0.28,0.11686213174727848,0.09829041829051795,-0.0757835481275136,0.3095078116220706,TRUE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA
+qgcomp,3777,0.28,0.3833708846916281,0.15745027680081305,0.07477401280617224,0.691967756577084,TRUE,TRUE,NA,Direct all-exposure one-quantile contrast,NA
+gWQS,4777,0.28,NA,NA,NA,NA,NA,FALSE,"関数 ""selectdatavars"" を見つけることができませんでした",Two-index WQS implied all-exposure contrast,other_error
+groupWQS,5777,0.28,0.1536290816365229,0.22536046225715212,-0.2880693079267933,0.5953274711998391,TRUE,TRUE,NA,Group-index implied all-exposure contrast,NA
+SGL-WQS,6777,0.28,0.11769368176213844,0.027120242578383857,0.06453898305651641,0.17084838046776046,FALSE,TRUE,NA,Sparse group index-implied all-exposure contrast,NA

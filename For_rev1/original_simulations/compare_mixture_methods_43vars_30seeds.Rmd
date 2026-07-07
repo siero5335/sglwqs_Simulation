@@ -1,0 +1,1257 @@
+---
+title: "High-Dimensional Mixture Methods Comparison (43 Components, 30-Seed Replication)"
+subtitle: "qgcomp vs gWQS vs groupWQS vs SGL-WQS with Realistic Environmental Mixtures (Continuous Outcome)"
+author: "Simulation Analysis"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    number_sections: true
+    theme: flatly
+    highlight: tango
+    code_folding: show
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 14,
+  fig.height = 10,
+  dpi = 150,
+  cache = TRUE
+)
+
+# Publication figure output directory
+fig_dir <- "figures"
+dir.create(fig_dir, showWarnings = FALSE, recursive = TRUE)
+
+N_BOOT <- 200
+N_QUANTILES <- 4
+SAMPLE_SIZES <- c(200, 500, 1000, 5000)
+SEEDS <- c(71, 42, 123, 256, 314, 500, 617, 789, 888, 999,
+           1001, 1123, 1234, 1357, 1500, 1618, 1729, 1847, 1963, 2048,
+           2222, 2345, 2500, 2718, 2801, 3001, 3141, 3333, 3500, 3777)
+N_SEEDS <- length(SEEDS)
+
+# Parallel workers
+N_WORKERS <- max(parallel::detectCores() - 1L, 1L)
+cat(sprintf("Parallel workers: %d / %d cores\n", N_WORKERS, parallel::detectCores()))
+```
+
+# Overview
+
+This document examines how mixture analysis methods perform with a **high-dimensional (p=43) environmental mixture** at varying sample sizes, replicated across **`r N_SEEDS` independent seeds** per sample size.
+
+**Key challenge:** With 43 exposure variables, the ratio of variables to sample size (p/n) becomes large at small n. This tests each method's ability to handle sparsity and high dimensionality.
+
+**Sample sizes:** `r paste(format(SAMPLE_SIZES, big.mark=","), collapse = ", ")`
+
+**Methods compared:** qgcomp, gWQS (2-index), groupWQS, SGL-WQS
+
+**True Data Structure (43 variables, 3 groups):**
+
+| Group | # Variables | True Effect Pattern |
+|-------|-------------|---------------------|
+| PCBs (13) | All positive (β = 0.04–0.08), diffuse group effect | Group-level positive |
+| Metals (18) | 3 negative (Pb, Cd, As), 2 positive (Hg, Se), 13 null | Mixed directions |
+| PFASs (12) | No effect (all null) | Null group |
+
+**Design rationale:**
+
+- Continuous outcome (Y ~ N(mu, sigma²)) avoids complete separation issues at small n
+- PCBs have diffuse group-level effects (all congeners contribute), reflecting shared exposure pathways rather than individual toxicant identification
+- Hg is set as positive and correlated with PCBs (shared fish-consumption pathway)
+- Metals group has mixed directions (harmful heavy metals vs essential/beneficial elements)
+- PFASs are a clean null group — tests false positive control under high dimensionality
+- This design tests group-level detection and direction separation rather than individual component identification
+
+---
+
+# Setup
+
+```{r load-packages , cache=FALSE}
+library(MASS)
+library(qgcomp)
+library(gWQS)
+library(groupWQS)
+library(sglwqs)
+library(future)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(knitr)
+library(kableExtra)
+library(tictoc)
+library(tidyverse)
+```
+
+```{r variable-definitions}
+# --- PCBs (13 congeners) ---
+PCBs <- c("PCB_28", "PCB_52", "PCB_84", "PCB_95", "PCB_101",
+           "PCB_118", "PCB_135", "PCB_138", "PCB_149", "PCB_153",
+           "PCB_180", "PCB_187", "PCB_194")
+
+# --- Metals (18 elements) ---
+Metals <- c("Sb", "As", "Bo", "Cd", "Ca", "Cr", "Co", "Cu",
+            "Pb", "Mg", "Mn", "Mo", "Ni", "Se", "Sn", "V", "Zn", "Hg")
+
+# --- PFASs (12 compounds) ---
+PFASs <- c("PFBS", "PFHxS", "PFOS", "PFOSA", "FTS_6_2",
+           "PFBA", "PFPeA", "PFHxA", "PFHpA", "PFOA", "PFNA", "PFDA")
+
+all_exposures <- c(PCBs, Metals, PFASs)
+groups <- list(PCBs = PCBs, Metals = Metals, PFASs = PFASs)
+
+cat(sprintf("Total exposure variables: %d (PCBs=%d, Metals=%d, PFASs=%d)\n",
+            length(all_exposures), length(PCBs), length(Metals), length(PFASs)))
+```
+
+```{r true-effects}
+# --- True beta coefficients ---
+
+# PCBs: group-level positive effect distributed across congeners
+# Reflects shared exposure source (e.g., fish consumption) rather than
+# a few individual drivers
+beta_pcb <- c(
+  PCB_28  = 0.05,  PCB_52  = 0.05,  PCB_84  = 0.04,  PCB_95  = 0.04,
+  PCB_101 = 0.06,  PCB_118 = 0.08,  PCB_135 = 0.04,  PCB_138 = 0.08,
+  PCB_149 = 0.04,  PCB_153 = 0.08,  PCB_180 = 0.07,  PCB_187 = 0.05,
+  PCB_194 = 0.04
+)
+
+# Metals: mixed directions within group
+# Toxic heavy metals negative, essential/beneficial elements positive, rest null
+beta_metal <- c(
+  Sb = 0.00,  As = -0.12,  Bo = 0.00,   Cd = -0.15,  Ca = 0.00,
+  Cr = 0.00,  Co = 0.00,   Cu = 0.00,   Pb = -0.18,  Mg = 0.00,
+  Mn = 0.00,  Mo = 0.00,   Ni = 0.00,   Se = 0.12,   Sn = 0.00,
+  V  = 0.00,  Zn = 0.00,   Hg = 0.10
+)
+
+# PFASs: null group (no true effects)
+beta_pfas <- c(
+  PFBS    = 0.00,  PFHxS  = 0.00,  PFOS   = 0.00,  PFOSA  = 0.00,
+  FTS_6_2 = 0.00,  PFBA   = 0.00,  PFPeA  = 0.00,  PFHxA  = 0.00,
+  PFHpA   = 0.00,  PFOA   = 0.00,  PFNA   = 0.00,  PFDA   = 0.00
+)
+
+beta_all <- c(beta_pcb, beta_metal, beta_pfas)
+
+true_directions <- data.frame(
+  Variable = all_exposures,
+  True_Beta = beta_all,
+  Group = c(rep("PCBs", length(PCBs)),
+            rep("Metals", length(Metals)),
+            rep("PFASs", length(PFASs)))
+) %>%
+  mutate(True_Direction = case_when(
+    True_Beta > 0.01  ~ "Positive",
+    True_Beta < -0.01 ~ "Negative",
+    TRUE ~ "None"
+  ))
+
+# Summary
+cat("Active components (|beta| > 0.01):\n")
+true_directions %>% filter(True_Direction != "None") %>%
+  arrange(Group, desc(abs(True_Beta))) %>%
+  print()
+```
+
+### True Coefficients
+
+```{r true-coef-table}
+kable(true_directions, digits = 3,
+      caption = "True Coefficients (43 Components)") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE) %>%
+  row_spec(which(true_directions$True_Direction == "Positive"), background = "#E3F2FD") %>%
+  row_spec(which(true_directions$True_Direction == "Negative"), background = "#FFEBEE")
+```
+
+```{r true-coef-plot, fig.height=6, fig.width=14}
+true_directions$Variable <- factor(true_directions$Variable, levels = all_exposures)
+
+ggplot(true_directions, aes(x = Variable, y = True_Beta, fill = Group)) +
+  geom_col(width = 0.7) +
+  geom_hline(yintercept = 0, linetype = "solid", color = "gray30") +
+  scale_fill_manual(values = c("PCBs" = "#2166AC", "Metals" = "#B2182B", "PFASs" = "#4DAF4A")) +
+  labs(title = "True Individual Component Effects (beta)",
+       subtitle = "PCBs: diffuse group effect; Metals: mixed directions; PFASs: null group",
+       x = NULL, y = expression(beta)) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, size = 7),
+        legend.position = "bottom")
+```
+
+---
+
+# Data Generation
+
+```{r data-generation-function}
+generate_highdim_simdata <- function(n = 1000, seed = 71) {
+  set.seed(seed)
+
+  # --- Covariates ---
+  sex <- rbinom(n, 1, 0.5)
+  age <- pmax(pmin(round(rnorm(n, 50, 12)), 80), 20)
+  bmi <- pmax(pmin(round(22 + 0.05 * age + 1.5 * sex + rnorm(n, 0, 4), 1), 45), 15)
+
+  # ============================================================
+  # PCBs (13 congeners) - high within-group correlation
+  # ============================================================
+  n_pcb <- length(PCBs)
+  # Base correlation: higher-chlorinated PCBs more correlated with each other
+  cor_pcb <- matrix(0.40, n_pcb, n_pcb)
+  diag(cor_pcb) <- 1.0
+
+  # Higher-chlorinated cluster (138, 153, 180, 187, 194) => indices 8,10,11,12,13
+  hi_cl <- c(8, 10, 11, 12, 13)
+  cor_pcb[hi_cl, hi_cl] <- 0.75
+  diag(cor_pcb[hi_cl, hi_cl]) <- 1.0
+  # Fix the full matrix
+  for (i in hi_cl) for (j in hi_cl) if (i != j) cor_pcb[i, j] <- 0.75
+
+  # Lower-chlorinated cluster (28, 52, 84, 95, 101) => indices 1,2,3,4,5
+  lo_cl <- c(1, 2, 3, 4, 5)
+  for (i in lo_cl) for (j in lo_cl) if (i != j) cor_pcb[i, j] <- 0.55
+
+  # Mid (118, 135, 149) => indices 6, 7, 9
+  mid_cl <- c(6, 7, 9)
+  for (i in mid_cl) for (j in mid_cl) if (i != j) cor_pcb[i, j] <- 0.50
+
+  # Cross-cluster moderate
+  for (i in lo_cl) for (j in hi_cl) {
+    cor_pcb[i, j] <- 0.35; cor_pcb[j, i] <- 0.35
+  }
+
+  sd_pcb <- rep(1.5, n_pcb)
+  sd_pcb[hi_cl] <- c(1.8, 2.0, 2.0, 1.5, 1.2)  # 138,153,180,187,194
+  mu_pcb <- c(2.5, 2.8, 2.0, 2.2, 3.0, 3.5, 2.0, 3.5, 2.5, 4.0, 4.5, 3.0, 2.5)
+
+  Sigma_pcb <- diag(sd_pcb) %*% cor_pcb %*% diag(sd_pcb)
+  pcb_raw <- MASS::mvrnorm(n, mu_pcb, Sigma_pcb)
+  colnames(pcb_raw) <- PCBs
+
+  # ============================================================
+  # Metals (18 elements) - subgroup correlation structure
+  # ============================================================
+  n_met <- length(Metals)
+  cor_met <- diag(n_met)
+
+  # Helper: set symmetric correlation
+  set_cor <- function(mat, names_all, n1, n2, val) {
+    i <- which(names_all == n1); j <- which(names_all == n2)
+    mat[i, j] <- val; mat[j, i] <- val; mat
+  }
+
+  # Toxic heavy metals cluster: As(2), Cd(4), Pb(9)
+  cor_met <- set_cor(cor_met, Metals, "As", "Cd", 0.45)
+  cor_met <- set_cor(cor_met, Metals, "As", "Pb", 0.40)
+  cor_met <- set_cor(cor_met, Metals, "Cd", "Pb", 0.55)
+
+  # Essential minerals cluster: Ca(5), Mg(10), Zn(17)
+  cor_met <- set_cor(cor_met, Metals, "Ca", "Mg", 0.50)
+  cor_met <- set_cor(cor_met, Metals, "Ca", "Zn", 0.35)
+  cor_met <- set_cor(cor_met, Metals, "Mg", "Zn", 0.40)
+
+  # Transition metals: Cr(6), Co(7), Cu(8), Mn(11), Ni(13)
+  trans <- c("Cr", "Co", "Cu", "Mn", "Ni")
+  for (i in seq_along(trans)) {
+    for (j in seq_along(trans)) {
+      if (i < j) cor_met <- set_cor(cor_met, Metals, trans[i], trans[j], 0.30)
+    }
+  }
+
+  # Se-Hg correlation (seafood pathway)
+  cor_met <- set_cor(cor_met, Metals, "Se", "Hg", 0.45)
+
+  # Small background correlations for remaining pairs
+  for (i in 1:n_met) for (j in 1:n_met) {
+    if (i < j && cor_met[i, j] == 0) {
+      cor_met[i, j] <- 0.10; cor_met[j, i] <- 0.10
+    }
+  }
+
+  # Log-scale means and SDs (metals are typically log-normal)
+  mu_met <- log(c(0.3, 3.0, 20, 0.5, 900, 1.0, 0.5, 80,
+                  2.0, 30, 8.0, 1.5, 2.0, 100, 1.0, 0.3, 70, 1.0))
+  sd_met <- c(0.5, 0.6, 0.4, 0.6, 0.3, 0.5, 0.4, 0.3,
+              0.8, 0.25, 0.4, 0.4, 0.5, 0.3, 0.5, 0.5, 0.3, 0.5)
+
+  Sigma_met <- diag(sd_met) %*% cor_met %*% diag(sd_met)
+  metal_raw <- MASS::mvrnorm(n, mu_met, Sigma_met)
+  metal <- exp(metal_raw)
+  colnames(metal) <- Metals
+
+  # ============================================================
+  # PFASs (12 compounds) - subgroup correlations
+  # ============================================================
+  n_pfas <- length(PFASs)
+  cor_pfas <- matrix(0.15, n_pfas, n_pfas)
+  diag(cor_pfas) <- 1.0
+
+  # Sulfonates cluster: PFBS(1), PFHxS(2), PFOS(3), PFOSA(4)
+  sulf <- 1:4
+  for (i in sulf) for (j in sulf) if (i != j) cor_pfas[i, j] <- 0.55
+
+  # Carboxylates cluster: PFBA(6), PFPeA(7), PFHxA(8), PFHpA(9), PFOA(10), PFNA(11), PFDA(12)
+  carb <- 6:12
+  for (i in carb) for (j in carb) if (i != j) cor_pfas[i, j] <- 0.50
+
+  # Long-chain cross-class: PFOS-PFOA, PFOS-PFNA
+  cor_pfas <- set_cor(cor_pfas, PFASs, "PFOS", "PFOA", 0.60)
+  cor_pfas <- set_cor(cor_pfas, PFASs, "PFOS", "PFNA", 0.55)
+  cor_pfas <- set_cor(cor_pfas, PFASs, "PFOA", "PFNA", 0.65)
+  cor_pfas <- set_cor(cor_pfas, PFASs, "PFOA", "PFDA", 0.55)
+  cor_pfas <- set_cor(cor_pfas, PFASs, "PFNA", "PFDA", 0.60)
+
+  mu_pfas <- c(0.5, 1.5, 5.0, 0.3, 0.4, 0.3, 0.2, 0.4, 0.3, 3.0, 1.5, 0.8)
+  sd_pfas <- c(1.0, 1.5, 3.5, 0.8, 0.8, 0.6, 0.5, 0.7, 0.6, 2.0, 1.2, 1.0)
+
+  Sigma_pfas <- diag(sd_pfas) %*% cor_pfas %*% diag(sd_pfas)
+  pfas_raw <- MASS::mvrnorm(n, mu_pfas, Sigma_pfas)
+  pfas_raw <- pmax(pfas_raw, 0.01)  # floor at LOD
+  colnames(pfas_raw) <- PFASs
+
+  # ============================================================
+  # Cross-group correlations: Hg ~ PCBs (fish consumption)
+  # ============================================================
+  # Induce Hg-PCB correlation by adding a shared latent factor
+  fish_factor <- rnorm(n, 0, 1)
+  hg_idx <- which(Metals == "Hg")
+  metal_raw[, hg_idx] <- metal_raw[, hg_idx] + 0.3 * fish_factor
+  metal[, hg_idx] <- exp(metal_raw[, hg_idx])
+
+  # Add same factor to high-chlorinated PCBs (via fish)
+  for (idx in hi_cl) {
+    pcb_raw[, idx] <- pcb_raw[, idx] + 0.25 * fish_factor
+  }
+
+  # ============================================================
+  # Generate outcome
+  # ============================================================
+  eta <- 50.0 +
+    scale(pcb_raw)  %*% beta_pcb +
+    scale(metal)    %*% beta_metal +
+    scale(pfas_raw) %*% beta_pfas +
+    sex * 2.0 + (age - 50) / 10 * 1.5 + (bmi - 25) / 5 * 3.0
+
+  Y <- as.numeric(eta + rnorm(n, 0, 5))
+
+  result <- data.frame(pcb_raw, metal, pfas_raw,
+                       sex = sex, age = age, bmi = bmi, Y = Y)
+  attr(result, "true_beta") <- list(
+    pcb   = beta_pcb,
+    metal = beta_metal,
+    pfas  = beta_pfas
+  )
+  return(result)
+}
+```
+
+```{r verify-data, fig.height=5}
+# Quick verification with large sample
+test_data <- generate_highdim_simdata(n = 5000, seed = 42)
+cat(sprintf("Outcome mean: %.2f, SD: %.2f\n", mean(test_data$Y), sd(test_data$Y)))
+cat(sprintf("Dimensions: %d obs x %d vars\n", nrow(test_data), ncol(test_data)))
+
+# Check Hg-PCB correlations
+hi_cl_pcbs <- c("PCB_138", "PCB_153", "PCB_180", "PCB_187", "PCB_194")
+hg_pcb_cors <- cor(test_data[, "Hg"], test_data[, hi_cl_pcbs])
+cat("\nHg-PCB correlations (fish pathway):\n")
+print(round(hg_pcb_cors, 3))
+
+# Quick check: univariate associations
+univ_p <- sapply(all_exposures, function(v) {
+  fit <- lm(Y ~ scale(get(v)) + sex + age + bmi, data = test_data)
+  summary(fit)$coefficients[2, 4]
+})
+cat(sprintf("\nSignificant (p<0.05) at n=5000: %d / %d\n",
+            sum(univ_p < 0.05), length(univ_p)))
+
+# Signal-to-noise check
+full_fit <- lm(as.formula(paste("Y ~", paste(all_exposures, collapse = " + "),
+                                 "+ sex + age + bmi")), data = test_data)
+cat(sprintf("Full model R²: %.3f\n", summary(full_fit)$r.squared))
+```
+
+---
+
+# Analysis Function
+
+```{r analysis-function}
+run_one_scenario <- function(n, seed) {
+  simdata <- generate_highdim_simdata(n = n, seed = seed)
+
+  result <- list(n = n, seed = seed)
+
+  # --- qgcomp (deterministic, no parallel) ---
+  qgcomp_formula <- as.formula(
+    paste("Y ~", paste(all_exposures, collapse = " + "), "+ sex + age + bmi")
+  )
+
+  tryCatch({
+    qc <- qgcomp.glm.noboot(qgcomp_formula, expnms = all_exposures,
+                              data = simdata, family = gaussian(), q = N_QUANTILES)
+
+    result$qgcomp_weights <- data.frame(
+      Variable  = c(names(qc$pos.weights), names(qc$neg.weights)),
+      Weight    = c(qc$pos.weights, qc$neg.weights),
+      Direction = c(rep("Positive", length(qc$pos.weights)),
+                    rep("Negative", length(qc$neg.weights))),
+      Method = "qgcomp", n = n, Seed = seed
+    )
+    result$qgcomp_psi <- qc$psi
+    result$qgcomp_pos <- qc$pos.psi
+    result$qgcomp_neg <- qc$neg.psi
+
+    # Direction detection
+    qc_dirs <- data.frame(Variable = all_exposures)
+    qc_dirs$Detected <- ifelse(qc_dirs$Variable %in% names(qc$pos.weights),
+                                "Positive", "Negative")
+    qc_dirs <- qc_dirs %>%
+      left_join(true_directions %>% dplyr::select(Variable, True_Direction), by = "Variable")
+    result$qgcomp_correct  <- sum(qc_dirs$Detected == qc_dirs$True_Direction |
+                                    qc_dirs$True_Direction == "None")
+    result$qgcomp_total    <- nrow(qc_dirs %>% filter(True_Direction != "None"))
+    result$qgcomp_accuracy <- result$qgcomp_correct / nrow(qc_dirs)
+  }, error = function(e) {
+    cat("    qgcomp failed:", e$message, "\n")
+    result$qgcomp_error <<- e$message
+  })
+
+  # --- gWQS (2-index model, parallel) ---
+  tryCatch({
+    gwqs_formula <- as.formula("Y ~ pwqs + nwqs + sex + age + bmi")
+
+    gwqs_fit <- withCallingHandlers(
+      gwqs(gwqs_formula, mix_name = all_exposures, data = simdata,
+           q = N_QUANTILES, validation = 0.4, b = N_BOOT,
+           b1_pos = TRUE, rh = 1, family = "gaussian", seed = seed,
+           plan_strategy = "multisession"),
+      warning = function(w) {
+        if (grepl("Using formula\\(x\\) is deprecated|formula\\.character",
+                  conditionMessage(w)))
+          invokeRestart("muffleWarning")
+      }
+    )
+
+    fw <- gwqs_fit$final_weights
+    gwqs_w <- bind_rows(
+      data.frame(Variable = fw$mix_name,
+                 Weight = fw$mean_weight_p,
+                 Direction = "Positive", Method = "gWQS", n = n, Seed = seed),
+      data.frame(Variable = fw$mix_name,
+                 Weight = fw$mean_weight_n,
+                 Direction = "Negative", Method = "gWQS", n = n, Seed = seed)
+    )
+    result$gwqs_weights <- gwqs_w
+
+    gwqs_coef <- coef(gwqs_fit$fit)
+    result$gwqs_pos <- gwqs_coef["pwqs"]
+    result$gwqs_neg <- gwqs_coef["nwqs"]
+
+    # Direction detection
+    gwqs_dirs <- data.frame(Variable = fw$mix_name)
+    gwqs_dirs$Detected <- ifelse(fw$mean_weight_p >= fw$mean_weight_n,
+                                  "Positive", "Negative")
+    gwqs_dirs <- gwqs_dirs %>%
+      left_join(true_directions %>% dplyr::select(Variable, True_Direction), by = "Variable")
+    result$gwqs_correct  <- sum(gwqs_dirs$Detected == gwqs_dirs$True_Direction |
+                                  gwqs_dirs$True_Direction == "None")
+    result$gwqs_accuracy <- result$gwqs_correct / nrow(gwqs_dirs)
+  }, error = function(e) {
+    cat("    gWQS failed:", e$message, "\n")
+    result$gwqs_error <<- e$message
+  })
+
+  # --- groupWQS ---
+  tryCatch({
+    group_list <- list(PCBs, Metals, PFASs)
+    X_gw <- make.X(simdata, num.groups = 3, groups = group_list)
+    x.s  <- make.x.s(simdata, num.groups = 3, groups = group_list)
+
+    n_total <- nrow(simdata)
+    n_train <- round(n_total * 0.6)
+    set.seed(seed)
+    train_idx <- sample(seq_len(n_total), size = n_train)
+    valid_idx <- setdiff(seq_len(n_total), train_idx)
+
+    gw_fit <- gwqs.fit(
+      y = simdata$Y[valid_idx], y.train = simdata$Y[train_idx],
+      x = X_gw[valid_idx, ], x.train = X_gw[train_idx, ],
+      x.s = x.s, B = N_BOOT, n.quantiles = N_QUANTILES, func = "continuous"
+    )
+
+    grp_w <- data.frame()
+    for (i in seq_along(gw_fit$weights)) {
+      grp_w <- rbind(grp_w, data.frame(
+        Variable  = names(gw_fit$weights[[i]]),
+        Weight    = as.numeric(gw_fit$weights[[i]]),
+        Direction = "Combined",
+        Method = "groupWQS", n = n, Seed = seed
+      ))
+    }
+    result$groupwqs_weights <- grp_w
+    result$groupwqs_coefs   <- coef(gw_fit$fit)[grep("^GWQS", names(coef(gw_fit$fit)))]
+  }, error = function(e) {
+    cat("    groupWQS failed:", e$message, "\n")
+    result$groupwqs_error <<- e$message
+  })
+
+  # --- SGL-WQS (parallel) ---
+  tryCatch({
+    plan(multisession, workers = N_WORKERS)
+
+    sglwqs_fit <- sglwqs(
+      X = simdata[, all_exposures], y = simdata$Y,
+      covariates = simdata[, c("sex", "age", "bmi")],
+      groups = groups, family = "gaussian",
+      n_quantiles = N_QUANTILES, bootstrap = TRUE,
+      n_boot = N_BOOT, parallel = TRUE,
+      validation = TRUE, train_prop = 0.6, seed = seed
+    )
+    plan(sequential)
+
+    sw <- extract_weights(sglwqs_fit, direction = "both") %>%
+      dplyr::select(Variable = variable, Weight = weight, Direction = direction) %>%
+      mutate(Direction = tools::toTitleCase(Direction),
+             Method = "SGL-WQS", n = n, Seed = seed)
+    result$sglwqs_weights <- sw
+    result$sglwqs_pos <- sglwqs_fit$pos_index_sum
+    result$sglwqs_neg <- sglwqs_fit$neg_index_sum
+
+    # Group-level index sums
+    result$sglwqs_pos_by_group <- sglwqs_fit$pos_index_sum_by_group
+    result$sglwqs_neg_by_group <- sglwqs_fit$neg_index_sum_by_group
+
+    # Validation-stage group × direction inference
+    if (!is.null(sglwqs_fit$validation_info) &&
+        !is.null(sglwqs_fit$validation_info$group_results)) {
+      result$sglwqs_group_val <- sglwqs_fit$validation_info$group_results
+    }
+
+    # Selection frequency from bootstrap
+    if (!is.null(sglwqs_fit$boot_info)) {
+      result$sglwqs_sel_freq_pos <- sglwqs_fit$boot_info$selection_freq_pos
+      result$sglwqs_sel_freq_neg <- sglwqs_fit$boot_info$selection_freq_neg
+    }
+
+    # Direction detection
+    sgl_dirs <- data.frame(Variable = all_exposures)
+    pos_w <- sglwqs_fit$pos_weights
+    neg_w <- sglwqs_fit$neg_weights
+    sgl_dirs$Detected <- ifelse(pos_w[sgl_dirs$Variable] > neg_w[sgl_dirs$Variable],
+                                 "Positive", "Negative")
+    sgl_dirs <- sgl_dirs %>%
+      left_join(true_directions %>% dplyr::select(Variable, True_Direction), by = "Variable")
+    result$sglwqs_correct  <- sum(sgl_dirs$Detected == sgl_dirs$True_Direction |
+                                    sgl_dirs$True_Direction == "None")
+    result$sglwqs_accuracy <- result$sglwqs_correct / nrow(sgl_dirs)
+  }, error = function(e) {
+    cat("    SGL-WQS failed:", e$message, "\n")
+    plan(sequential)
+    result$sglwqs_error <<- e$message
+  })
+
+  return(result)
+}
+```
+
+---
+
+# Run Analysis
+
+```{r run-analysis, cache=TRUE}
+tic("Total analysis time")
+
+all_results <- list()
+idx <- 1
+
+for (n in SAMPLE_SIZES) {
+  for (s in seq_along(SEEDS)) {
+    seed <- SEEDS[s]
+    cat(sprintf("n=%s, seed=%d (%d/%d)...\n",
+                format(n, big.mark = ","), seed, s, N_SEEDS))
+
+    tryCatch({
+      all_results[[idx]] <- run_one_scenario(n, seed)
+      idx <- idx + 1
+    }, error = function(e) {
+      cat("  FAILED:", e$message, "\n")
+    })
+  }
+}
+
+toc()
+```
+
+---
+
+# Results
+
+## Direction Detection Accuracy (Mean ± SD)
+
+```{r direction-accuracy, cache=FALSE}
+accuracy_df <- data.frame()
+
+for (res in all_results) {
+  if (!is.null(res$qgcomp_accuracy)) {
+    accuracy_df <- rbind(accuracy_df, data.frame(
+      n = res$n, Seed = res$seed, Method = "qgcomp", Accuracy = res$qgcomp_accuracy))
+  }
+  if (!is.null(res$gwqs_accuracy)) {
+    accuracy_df <- rbind(accuracy_df, data.frame(
+      n = res$n, Seed = res$seed, Method = "gWQS", Accuracy = res$gwqs_accuracy))
+  }
+  if (!is.null(res$groupwqs_coefs)) {
+    gc <- res$groupwqs_coefs
+    if (length(gc) >= 3) {
+      grp_dirs <- c(
+        setNames(rep(ifelse(gc[1] >= 0, "Positive", "Negative"), length(PCBs)), PCBs),
+        setNames(rep(ifelse(gc[2] >= 0, "Positive", "Negative"), length(Metals)), Metals),
+        setNames(rep(ifelse(gc[3] >= 0, "Positive", "Negative"), length(PFASs)), PFASs))
+      grp_check <- data.frame(Variable = names(grp_dirs), Detected = grp_dirs) %>%
+        left_join(true_directions %>% dplyr::select(Variable, True_Direction), by = "Variable")
+      grp_acc <- sum(grp_check$Detected == grp_check$True_Direction |
+                       grp_check$True_Direction == "None") / nrow(grp_check)
+      accuracy_df <- rbind(accuracy_df, data.frame(
+        n = res$n, Seed = res$seed, Method = "groupWQS", Accuracy = grp_acc))
+    }
+  }
+  if (!is.null(res$sglwqs_accuracy)) {
+    accuracy_df <- rbind(accuracy_df, data.frame(
+      n = res$n, Seed = res$seed, Method = "SGL-WQS", Accuracy = res$sglwqs_accuracy))
+  }
+}
+
+accuracy_summary <- accuracy_df %>%
+  group_by(n, Method) %>%
+  summarize(Mean = mean(Accuracy, na.rm = TRUE),
+            SD = sd(Accuracy, na.rm = TRUE), .groups = "drop") %>%
+  mutate(`Mean (SD)` = sprintf("%.1f%% (%.1f%%)", Mean * 100, SD * 100))
+
+kable(accuracy_summary %>%
+        dplyr::select(n, Method, `Mean (SD)`) %>%
+        pivot_wider(names_from = Method, values_from = `Mean (SD)`),
+      caption = "Direction Detection Accuracy: Mean (SD)") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+```{r accuracy-plots, cache=FALSE, fig.height=7, fig.width=14}
+p1 <- ggplot(accuracy_summary, aes(x = n, y = Mean, color = Method)) +
+  geom_line(linewidth = 1.2) + geom_point(size = 3) +
+  geom_errorbar(aes(ymin = pmax(Mean - SD, 0), ymax = pmin(Mean + SD, 1)),
+                width = 0.05, linewidth = 0.8) +
+  scale_x_log10(breaks = SAMPLE_SIZES, labels = scales::comma) +
+  scale_y_continuous(labels = scales::percent, limits = c(0.4, 1.05)) +
+  scale_color_brewer(palette = "Set1") +
+  labs(title = paste0("Direction Detection Accuracy (", N_SEEDS, " seeds)"),
+       x = "Sample Size (log scale)", y = "Accuracy") +
+  theme_minimal() + theme(legend.position = "bottom",
+                           axis.text.x = element_text(angle = 45, hjust = 1))
+print(p1)
+
+p2 <- ggplot(accuracy_df, aes(x = factor(n), y = Accuracy, fill = Method)) +
+  geom_violin(alpha = 0.25, position = position_dodge(width = 0.8), trim = FALSE) +
+  geom_point(size = 1.5, alpha = 0.6,
+             position = position_jitterdodge(jitter.width = 0.08, dodge.width = 0.8)) +
+  scale_y_continuous(labels = scales::percent, limits = c(0.3, 1.05)) +
+  scale_fill_brewer(palette = "Set1") +
+  labs(x = "Sample Size", y = "Accuracy") +
+  theme_minimal() + theme(legend.position = "bottom")
+print(p2)
+
+ggsave(file.path(fig_dir, "Fig_43var_accuracy_line.pdf"), p1,
+       width = 180, height = 100, units = "mm", dpi = 300)
+ggsave(file.path(fig_dir, "Fig_43var_accuracy_violin.pdf"), p2,
+       width = 180, height = 120, units = "mm", dpi = 300)
+```
+
+## Weight Concentration on Active Components
+
+This metric measures the proportion of total weight assigned to truly active components. Unlike binary sensitivity/specificity, this captures the **magnitude** of weight assigned, not just whether it exceeds an arbitrary threshold.
+
+```{r extract-weights, cache=FALSE}
+all_wt <- data.frame()
+for (res in all_results) {
+  if (!is.null(res$qgcomp_weights))   all_wt <- rbind(all_wt, res$qgcomp_weights)
+  if (!is.null(res$gwqs_weights))     all_wt <- rbind(all_wt, res$gwqs_weights)
+  if (!is.null(res$groupwqs_weights)) all_wt <- rbind(all_wt, res$groupwqs_weights)
+  if (!is.null(res$sglwqs_weights))   all_wt <- rbind(all_wt, res$sglwqs_weights)
+}
+
+all_wt <- all_wt %>%
+  left_join(true_directions %>% dplyr::select(Variable, True_Beta, Group, True_Direction),
+            by = "Variable")
+
+active_vars <- true_directions$Variable[true_directions$True_Direction != "None"]
+null_vars   <- true_directions$Variable[true_directions$True_Direction == "None"]
+chance_level <- length(active_vars) / length(all_exposures)
+```
+
+```{r weight-concentration, cache=FALSE, fig.height=7, fig.width=14}
+# Use max weight per variable across directions (handles groupWQS Combined + 2-index methods)
+wt_max <- all_wt %>%
+  group_by(Method, n, Seed, Variable) %>%
+  summarize(MaxWeight = max(Weight, na.rm = TRUE), .groups = "drop")
+
+wt_conc <- wt_max %>%
+  mutate(IsActive = Variable %in% active_vars) %>%
+  group_by(Method, n, Seed, IsActive) %>%
+  summarize(TotalWeight = sum(MaxWeight, na.rm = TRUE), .groups = "drop") %>%
+  pivot_wider(names_from = IsActive, values_from = TotalWeight,
+              names_prefix = "Active_") %>%
+  mutate(Concentration = Active_TRUE / (Active_TRUE + Active_FALSE))
+
+wt_conc_summary <- wt_conc %>%
+  group_by(n, Method) %>%
+  summarize(Mean = mean(Concentration, na.rm = TRUE),
+            SD = sd(Concentration, na.rm = TRUE), .groups = "drop")
+
+p <- ggplot(wt_conc, aes(x = factor(n), y = Concentration, fill = Method)) +
+  geom_violin(alpha = 0.25, position = position_dodge(width = 0.8), trim = FALSE) +
+  geom_point(size = 1, alpha = 0.6,
+             position = position_jitterdodge(jitter.width = 0.06, dodge.width = 0.8)) +
+  geom_hline(yintercept = chance_level, linetype = "dashed", color = "red") +
+  annotate("text", x = 0.6, y = chance_level + 0.02,
+           label = sprintf("Chance = %.0f%%", chance_level * 100),
+           color = "red", size = 3, hjust = 0) +
+  scale_fill_brewer(palette = "Set1") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(title = paste0("Weight Concentration on Active Components (", N_SEEDS, " seeds)"),
+       subtitle = paste0(length(active_vars), " active / ", length(all_exposures), " total"),
+       x = "Sample Size", y = "Proportion of Total Weight on Active Components") +
+  theme_minimal() + theme(legend.position = "bottom")
+print(p)
+
+ggsave(file.path(fig_dir, "Fig_43var_weight_concentration.pdf"), p,
+       width = 180, height = 120, units = "mm", dpi = 300)
+
+kable(wt_conc_summary %>%
+        mutate(`Mean (SD)` = sprintf("%.1f%% (%.1f%%)", Mean*100, SD*100)) %>%
+        dplyr::select(n, Method, `Mean (SD)`) %>%
+        pivot_wider(names_from = Method, values_from = `Mean (SD)`),
+      caption = sprintf("Weight Concentration (chance = %.1f%%)", chance_level*100)) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+## Active-to-Null Mean Weight Ratio
+
+The ratio of mean weight on active components to mean weight on null components. A ratio of 1.0 means no discrimination; higher is better.
+
+```{r weight-ratio, cache=FALSE, fig.height=7, fig.width=14}
+wt_ratio <- wt_max %>%
+  mutate(IsActive = Variable %in% active_vars) %>%
+  group_by(Method, n, Seed, IsActive) %>%
+  summarize(MeanWeight = mean(MaxWeight, na.rm = TRUE), .groups = "drop") %>%
+  pivot_wider(names_from = IsActive, values_from = MeanWeight,
+              names_prefix = "Active_") %>%
+  mutate(Ratio = ifelse(Active_FALSE > 0, Active_TRUE / Active_FALSE, NA))
+
+wt_ratio_summary <- wt_ratio %>%
+  group_by(n, Method) %>%
+  summarize(Mean = mean(Ratio, na.rm = TRUE),
+            SD = sd(Ratio, na.rm = TRUE), .groups = "drop")
+
+p <- ggplot(wt_ratio, aes(x = factor(n), y = Ratio, fill = Method)) +
+  geom_violin(alpha = 0.25, position = position_dodge(width = 0.8), trim = FALSE) +
+  geom_point(size = 1, alpha = 0.6,
+             position = position_jitterdodge(jitter.width = 0.06, dodge.width = 0.8)) +
+  geom_hline(yintercept = 1.0, linetype = "dashed", color = "red") +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = paste0("Active-to-Null Mean Weight Ratio (", N_SEEDS, " seeds)"),
+       subtitle = "Higher = better. Red line = no discrimination (1.0)",
+       x = "Sample Size", y = "Mean Weight (Active) / Mean Weight (Null)") +
+  theme_minimal() + theme(legend.position = "bottom")
+print(p)
+
+ggsave(file.path(fig_dir, "Fig_43var_weight_ratio.pdf"), p,
+       width = 180, height = 120, units = "mm", dpi = 300)
+
+kable(wt_ratio_summary %>%
+        mutate(`Mean (SD)` = sprintf("%.2f (%.2f)", Mean, SD)) %>%
+        dplyr::select(n, Method, `Mean (SD)`) %>%
+        pivot_wider(names_from = Method, values_from = `Mean (SD)`),
+      caption = "Active-to-Null Weight Ratio (1.0 = no discrimination)") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+## Weight Rank of Active Components
+
+For each seed, we rank all variables by weight (within direction) and check the mean normalized rank of active components. Lower rank (closer to 0%) = better.
+
+```{r weight-rank, cache=FALSE, fig.height=7, fig.width=14}
+# Rank by max weight per variable (comparable across all methods)
+rank_df <- wt_max %>%
+  group_by(Method, n, Seed) %>%
+  mutate(Rank = rank(-MaxWeight, ties.method = "average"),
+         NormRank = Rank / n()) %>%
+  ungroup() %>%
+  filter(Variable %in% active_vars)
+
+rank_overall <- rank_df %>%
+  group_by(n, Method, Seed) %>%
+  summarize(MeanNormRank = mean(NormRank, na.rm = TRUE), .groups = "drop")
+
+p <- ggplot(rank_overall, aes(x = factor(n), y = MeanNormRank, fill = Method)) +
+  geom_violin(alpha = 0.25, position = position_dodge(width = 0.8), trim = FALSE) +
+  geom_point(size = 1, alpha = 0.6,
+             position = position_jitterdodge(jitter.width = 0.06, dodge.width = 0.8)) +
+  geom_hline(yintercept = 0.5, linetype = "dashed", color = "red") +
+  scale_fill_brewer(palette = "Set1") +
+  scale_y_reverse(labels = scales::percent) +
+  labs(title = paste0("Normalized Rank of Active Components (", N_SEEDS, " seeds)"),
+       subtitle = "Lower (top) = active components ranked higher. 50% = random",
+       x = "Sample Size", y = "Mean Normalized Rank (lower = better)") +
+  theme_minimal() + theme(legend.position = "bottom")
+print(p)
+
+ggsave(file.path(fig_dir, "Fig_43var_weight_rank.pdf"), p,
+       width = 180, height = 120, units = "mm", dpi = 300)
+```
+
+## Bootstrap Selection Frequency (SGL-WQS)
+
+Selection frequency measures how consistently each variable was selected across bootstrap iterations. Unlike averaged weights, this directly measures selection stability without the dilution effect of bootstrap averaging.
+
+*Note: This section requires the analysis to be run with the updated analysis function that collects `sglwqs_sel_freq_pos/neg`. If "No selection frequency data available" appears, re-run the analysis.*
+
+```{r selection-frequency, cache=FALSE, fig.height=10, fig.width=16}
+sel_freq_df <- data.frame()
+
+for (res in all_results) {
+  if (!is.null(res$sglwqs_sel_freq_pos) && !is.null(res$sglwqs_sel_freq_neg)) {
+    sf_pos <- res$sglwqs_sel_freq_pos
+    sf_neg <- res$sglwqs_sel_freq_neg
+    all_vars_sf <- union(names(sf_pos), names(sf_neg))
+    for (v in all_vars_sf) {
+      sp <- if (v %in% names(sf_pos)) sf_pos[v] else 0
+      sn <- if (v %in% names(sf_neg)) sf_neg[v] else 0
+      sel_freq_df <- rbind(sel_freq_df, data.frame(
+        Variable = v, n = res$n, Seed = res$seed,
+        SelFreq_Pos = sp, SelFreq_Neg = sn,
+        SelFreq_Max = max(sp, sn)))
+    }
+  }
+}
+
+if (nrow(sel_freq_df) > 0) {
+  sel_freq_df <- sel_freq_df %>%
+    left_join(true_directions %>% dplyr::select(Variable, True_Beta, Group, True_Direction),
+              by = "Variable") %>%
+    mutate(IsActive = Variable %in% active_vars)
+
+  # Heatmap
+  sf_heat <- sel_freq_df %>%
+    group_by(Variable, n, Group) %>%
+    summarize(MeanSelFreq = mean(SelFreq_Max, na.rm = TRUE), .groups = "drop")
+
+  var_order <- true_directions %>%
+    arrange(Group, desc(abs(True_Beta))) %>% pull(Variable)
+  sf_heat$Variable <- factor(sf_heat$Variable, levels = rev(var_order))
+
+  p <- ggplot(sf_heat, aes(x = factor(n), y = Variable, fill = MeanSelFreq)) +
+    geom_tile(color = "white", linewidth = 0.3) +
+    scale_fill_gradient2(low = "white", mid = "#FDD49E", high = "#D73027",
+                         midpoint = 0.5, limits = c(0, 1), name = "Selection\nFrequency") +
+    labs(title = paste0("SGL-WQS Bootstrap Selection Frequency (", N_SEEDS, " seeds)"),
+         subtitle = "Proportion of bootstrap iterations selecting each variable",
+         x = "Sample Size", y = NULL) +
+    theme_minimal() + theme(axis.text.y = element_text(size = 7), panel.grid = element_blank())
+  print(p)
+
+  ggsave(file.path(fig_dir, "Fig_43var_sglwqs_selection_freq.pdf"), p,
+         width = 180, height = 220, units = "mm", dpi = 300)
+
+  # Active vs Null selection frequency
+  sf_by_status <- sel_freq_df %>%
+    mutate(IsActive = Variable %in% active_vars) %>%
+    group_by(n, Seed, IsActive) %>%
+    summarize(MeanSelFreq = mean(SelFreq_Max, na.rm = TRUE), .groups = "drop") %>%
+    pivot_wider(names_from = IsActive, values_from = MeanSelFreq, names_prefix = "Active_")
+
+  sf_summary <- sf_by_status %>%
+    group_by(n) %>%
+    summarize(Active_Mean = mean(Active_TRUE, na.rm = TRUE),
+              Active_SD = sd(Active_TRUE, na.rm = TRUE),
+              Null_Mean = mean(Active_FALSE, na.rm = TRUE),
+              Null_SD = sd(Active_FALSE, na.rm = TRUE), .groups = "drop")
+
+  kable(sf_summary %>%
+          mutate(Active = sprintf("%.1f%% (%.1f%%)", Active_Mean*100, Active_SD*100),
+                 Null = sprintf("%.1f%% (%.1f%%)", Null_Mean*100, Null_SD*100)) %>%
+          dplyr::select(n, Active, Null),
+        caption = "SGL-WQS Bootstrap Selection Frequency: Active vs Null") %>%
+    kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+
+  # Stable Selection Rate (>50% of bootstraps)
+  ss_by_n <- sel_freq_df %>%
+    mutate(StablySelected = SelFreq_Max > 0.5) %>%
+    group_by(n, Seed, IsActive) %>%
+    summarize(Rate = mean(StablySelected), .groups = "drop") %>%
+    group_by(n, IsActive) %>%
+    summarize(Mean = mean(Rate), SD = sd(Rate), .groups = "drop")
+
+  p_ss <- ggplot(ss_by_n, aes(x = factor(n), y = Mean, fill = IsActive)) +
+    geom_col(position = position_dodge(width = 0.7), width = 0.6) +
+    geom_errorbar(aes(ymin = pmax(Mean - SD, 0), ymax = pmin(Mean + SD, 1)),
+                  position = position_dodge(width = 0.7), width = 0.2) +
+    scale_fill_manual(values = c("FALSE" = "gray60", "TRUE" = "#D73027"),
+                      labels = c("Null", "Active")) +
+    scale_y_continuous(labels = scales::percent) +
+    labs(title = paste0("SGL-WQS Stable Selection Rate (", N_SEEDS, " seeds)"),
+         subtitle = "Selected in >50% of bootstraps",
+         x = "Sample Size", y = "Stable Selection Rate", fill = NULL) +
+    theme_minimal() + theme(legend.position = "bottom")
+  print(p_ss)
+
+  kable(ss_by_n %>%
+          mutate(Status = ifelse(IsActive, "Active", "Null"),
+                 `Mean (SD)` = sprintf("%.1f%% (%.1f%%)", Mean*100, SD*100)) %>%
+          dplyr::select(n, Status, `Mean (SD)`) %>%
+          pivot_wider(names_from = Status, values_from = `Mean (SD)`),
+        caption = "Stable Selection Rate: Active vs Null") %>%
+    kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+
+  ggsave(file.path(fig_dir, "Fig_43var_sglwqs_stable_selection.pdf"), p_ss,
+         width = 180, height = 100, units = "mm", dpi = 300)
+
+  # Selection-Weighted Concentration
+  sgl_wt <- all_wt %>% filter(Method == "SGL-WQS")
+  if (nrow(sgl_wt) > 0) {
+    sgl_max <- sgl_wt %>%
+      group_by(n, Seed, Variable) %>%
+      summarize(MaxWeight = max(Weight, na.rm = TRUE), .groups = "drop")
+
+    sw_conc <- sgl_max %>%
+      left_join(sel_freq_df %>%
+                  group_by(n, Seed, Variable) %>%
+                  summarize(SelFreq = mean(SelFreq_Max), .groups = "drop"),
+                by = c("n", "Seed", "Variable")) %>%
+      mutate(SelFreq = ifelse(is.na(SelFreq), 0, SelFreq),
+             AdjWeight = MaxWeight * SelFreq,
+             IsActive = Variable %in% active_vars) %>%
+      group_by(n, Seed, IsActive) %>%
+      summarize(TotalAdjWeight = sum(AdjWeight, na.rm = TRUE), .groups = "drop") %>%
+      pivot_wider(names_from = IsActive, values_from = TotalAdjWeight,
+                  names_prefix = "Active_") %>%
+      mutate(SelWtConc = Active_TRUE / (Active_TRUE + Active_FALSE))
+
+    sw_conc_summary <- sw_conc %>%
+      group_by(n) %>%
+      summarize(Mean = mean(SelWtConc, na.rm = TRUE),
+                SD = sd(SelWtConc, na.rm = TRUE), .groups = "drop")
+
+    raw_conc <- wt_conc_summary %>% filter(Method == "SGL-WQS")
+    comparison <- raw_conc %>%
+      dplyr::select(n, Raw_Mean = Mean, Raw_SD = SD) %>%
+      left_join(sw_conc_summary %>% rename(SelWt_Mean = Mean, SelWt_SD = SD), by = "n")
+
+    kable(comparison %>%
+            mutate(Raw = sprintf("%.1f%% (%.1f%%)", Raw_Mean*100, Raw_SD*100),
+                   `Selection-Weighted` = sprintf("%.1f%% (%.1f%%)", SelWt_Mean*100, SelWt_SD*100)) %>%
+            dplyr::select(n, Raw, `Selection-Weighted`),
+          caption = sprintf("SGL-WQS Weight Concentration: Raw vs Selection-Weighted (chance=%.1f%%)",
+                            chance_level*100)) %>%
+      kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+  }
+} else {
+  cat("No selection frequency data available.\n")
+}
+```
+
+## Weight Distributions: Active Components
+
+```{r weights-active, cache=FALSE, fig.height=10, fig.width=16}
+for (m in c("SGL-WQS", "gWQS", "qgcomp")) {
+  m_wt <- all_wt %>% filter(Method == m, Variable %in% active_vars)
+  if (nrow(m_wt) == 0) next
+  p <- ggplot(m_wt, aes(x = factor(n), y = Weight, fill = Direction)) +
+    geom_violin(alpha = 0.25, position = position_dodge(width = 0.8), trim = FALSE) +
+    geom_point(size = 0.8, alpha = 0.5,
+               position = position_jitterdodge(jitter.width = 0.04, dodge.width = 0.8)) +
+    facet_wrap(~ Variable, scales = "free_y", ncol = 4) +
+    scale_fill_manual(values = c("Positive" = "#0072B2", "Negative" = "#E69F00")) +
+    labs(title = paste0(m, ": Weight Estimates — Active Components (", N_SEEDS, " seeds)"),
+         x = "Sample Size", y = "Weight") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          legend.position = "bottom", strip.text = element_text(size = 7))
+  print(p)
+  ggsave(file.path(fig_dir, paste0("Fig_43var_", gsub("-", "", m), "_weights_active.pdf")), p,
+         width = 180, height = 180, units = "mm", dpi = 300)
+}
+```
+
+## Mixture Effect Estimates
+
+```{r mixture-effects, cache=FALSE}
+effects_df <- data.frame()
+
+for (res in all_results) {
+  if (!is.null(res$qgcomp_psi)) {
+    effects_df <- rbind(effects_df, data.frame(
+      n = res$n, Seed = res$seed, Method = "qgcomp",
+      Effect_Type = c("Overall", "Positive", "Negative"),
+      Estimate = c(res$qgcomp_psi, res$qgcomp_pos, res$qgcomp_neg)))
+  }
+  if (!is.null(res$gwqs_pos)) {
+    effects_df <- rbind(effects_df, data.frame(
+      n = res$n, Seed = res$seed, Method = "gWQS",
+      Effect_Type = c("Positive Index", "Negative Index"),
+      Estimate = c(res$gwqs_pos, res$gwqs_neg)))
+  }
+  if (!is.null(res$sglwqs_pos)) {
+    effects_df <- rbind(effects_df, data.frame(
+      n = res$n, Seed = res$seed, Method = "SGL-WQS",
+      Effect_Type = c("Positive Index", "Negative Index"),
+      Estimate = c(res$sglwqs_pos, -res$sglwqs_neg)))
+  }
+  if (!is.null(res$groupwqs_coefs)) {
+    gc <- res$groupwqs_coefs
+    if (length(gc) >= 3) {
+      effects_df <- rbind(effects_df, data.frame(
+        n = res$n, Seed = res$seed, Method = "groupWQS",
+        Effect_Type = c("PCBs Index", "Metals Index", "PFASs Index"),
+        Estimate = as.numeric(gc[1:3])))
+    }
+  }
+}
+
+effects_summary <- effects_df %>%
+  group_by(n, Method, Effect_Type) %>%
+  summarize(Mean = mean(Estimate, na.rm = TRUE),
+            SD = sd(Estimate, na.rm = TRUE), .groups = "drop") %>%
+  mutate(`Mean (SD)` = sprintf("%.3f (%.3f)", Mean, SD))
+
+kable(effects_summary %>%
+        dplyr::select(n, Method, Effect_Type, `Mean (SD)`) %>%
+        pivot_wider(names_from = n, values_from = `Mean (SD)`),
+      caption = "Mixture Effect Estimates: Mean (SD)") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+```{r effects-ribbon, fig.height=10, fig.width=14, cache=FALSE}
+p <- ggplot(effects_summary, aes(x = n, y = Mean, color = Effect_Type)) +
+  geom_line(linewidth = 1) + geom_point(size = 2) +
+  geom_ribbon(aes(ymin = Mean - SD, ymax = Mean + SD, fill = Effect_Type),
+              alpha = 0.15, color = NA) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
+  facet_wrap(~ Method, scales = "free_y", ncol = 2) +
+  scale_x_log10(breaks = SAMPLE_SIZES, labels = scales::comma) +
+  scale_color_brewer(palette = "Dark2") + scale_fill_brewer(palette = "Dark2") +
+  labs(title = paste0("Mixture Effect Estimates (", N_SEEDS, " seeds)"),
+       x = "Sample Size (log scale)", y = "Effect Estimate") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
+print(p)
+
+ggsave(file.path(fig_dir, "Fig_43var_effects_ribbon.pdf"), p,
+       width = 180, height = 160, units = "mm", dpi = 300)
+```
+
+## SGL-WQS Validation-Stage Group Inference
+
+This shows the group × direction specific coefficients (γ), standard errors, p-values, and significance rates from the validation set. This is the key output that distinguishes significant group effects from spurious selection.
+
+```{r sglwqs-validation, cache=FALSE}
+val_df <- data.frame()
+
+for (res in all_results) {
+  if (!is.null(res$sglwqs_group_val)) {
+    for (grp_name in names(res$sglwqs_group_val)) {
+      gv <- res$sglwqs_group_val[[grp_name]]
+      val_df <- rbind(val_df, data.frame(
+        n = res$n, Seed = res$seed, Group = grp_name,
+        Direction = "Positive",
+        Estimate = gv$pos_estimate, SE = gv$pos_se, Pvalue = gv$pos_pvalue))
+      val_df <- rbind(val_df, data.frame(
+        n = res$n, Seed = res$seed, Group = grp_name,
+        Direction = "Negative",
+        Estimate = gv$neg_estimate, SE = gv$neg_se, Pvalue = gv$neg_pvalue))
+    }
+  }
+}
+
+if (nrow(val_df) > 0) {
+  val_summary <- val_df %>%
+    filter(!is.na(Estimate)) %>%
+    group_by(n, Group, Direction) %>%
+    summarize(
+      Median_Est = median(Estimate, na.rm = TRUE),
+      IQR_Est = sprintf("[%.3f, %.3f]",
+                        quantile(Estimate, 0.25, na.rm = TRUE),
+                        quantile(Estimate, 0.75, na.rm = TRUE)),
+      Sig_Rate = sprintf("%d/%d", sum(Pvalue < 0.05, na.rm = TRUE), n()),
+      .groups = "drop"
+    ) %>%
+    mutate(Summary = paste0(round(Median_Est, 3), " ", IQR_Est, " (", Sig_Rate, ")"))
+
+  kable(val_summary %>%
+          mutate(GroupDir = paste0(Group, " (", Direction, ")")) %>%
+          dplyr::select(n, GroupDir, Summary) %>%
+          pivot_wider(names_from = n, values_from = Summary),
+        caption = "SGL-WQS Validation-Stage Inference: Median [IQR] (sig/total)") %>%
+    kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+} else {
+  cat("No validation-stage group results available.\n")
+}
+```
+
+## Null Group Control: PFAS Weight Leakage
+
+PFASs have no true effects. Lower total weight on PFASs = better false positive control.
+
+```{r pfas-null, cache=FALSE, fig.height=6, fig.width=12}
+pfas_leakage <- wt_max %>%
+  mutate(Group = ifelse(Variable %in% PCBs, "PCBs",
+                 ifelse(Variable %in% Metals, "Metals", "PFASs"))) %>%
+  filter(Group == "PFASs") %>%
+  group_by(Method, n, Seed) %>%
+  summarize(TotalWeight = sum(MaxWeight, na.rm = TRUE), .groups = "drop")
+
+p <- ggplot(pfas_leakage, aes(x = factor(n), y = TotalWeight, fill = Method)) +
+  geom_violin(alpha = 0.25, position = position_dodge(width = 0.8), trim = FALSE) +
+  geom_point(size = 1, alpha = 0.6,
+             position = position_jitterdodge(jitter.width = 0.06, dodge.width = 0.8)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "darkgreen") +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = paste0("PFAS Null Group: Total Weight Leakage (", N_SEEDS, " seeds)"),
+       subtitle = "PFASs have no true effects. Lower = better false positive control",
+       x = "Sample Size", y = "Total Weight on PFAS Group") +
+  theme_minimal() + theme(legend.position = "bottom")
+print(p)
+
+ggsave(file.path(fig_dir, "Fig_43var_pfas_null_leakage.pdf"), p,
+       width = 180, height = 100, units = "mm", dpi = 300)
+
+pfas_leak_summary <- pfas_leakage %>%
+  group_by(n, Method) %>%
+  summarize(Mean = mean(TotalWeight, na.rm = TRUE),
+            SD = sd(TotalWeight, na.rm = TRUE), .groups = "drop")
+
+kable(pfas_leak_summary %>%
+        mutate(`Mean (SD)` = sprintf("%.3f (%.3f)", Mean, SD)) %>%
+        dplyr::select(n, Method, `Mean (SD)`) %>%
+        pivot_wider(names_from = Method, values_from = `Mean (SD)`),
+      caption = "Total Weight on Null PFAS Group (lower = better)") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+## Group-Level Effect Detection
+
+This evaluates whether each method correctly identifies which groups have effects and in which direction. PCBs should be positive, Metals should have both positive and negative components, PFASs should be null.
+
+```{r group-detection, cache=FALSE, fig.height=7, fig.width=14}
+# For each method × seed × n, compute total weight by group × direction
+grp_effects <- wt_max %>%
+  mutate(Group = ifelse(Variable %in% PCBs, "PCBs",
+                 ifelse(Variable %in% Metals, "Metals", "PFASs"))) %>%
+  group_by(Method, n, Seed, Group) %>%
+  summarize(GroupWeight = sum(MaxWeight, na.rm = TRUE), .groups = "drop")
+
+# Normalize within each method × seed × n
+grp_effects <- grp_effects %>%
+  group_by(Method, n, Seed) %>%
+  mutate(GroupShare = GroupWeight / sum(GroupWeight)) %>%
+  ungroup()
+
+p <- ggplot(grp_effects, aes(x = factor(n), y = GroupShare, fill = Group)) +
+  geom_violin(alpha = 0.25, position = position_dodge(width = 0.8), trim = FALSE) +
+  geom_point(size = 0.8, alpha = 0.4,
+             position = position_jitterdodge(jitter.width = 0.04, dodge.width = 0.8)) +
+  geom_hline(yintercept = 1/3, linetype = "dashed", color = "gray50") +
+  facet_wrap(~ Method, ncol = 2) +
+  scale_fill_manual(values = c("PCBs" = "#2166AC", "Metals" = "#B2182B", "PFASs" = "#4DAF4A")) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(title = paste0("Group Weight Share by Method (", N_SEEDS, " seeds)"),
+       subtitle = "PCBs and Metals should dominate; PFASs (null) should be minimal. Dashed = uniform (33%)",
+       x = "Sample Size", y = "Group Share of Total Weight") +
+  theme_minimal() + theme(legend.position = "bottom")
+print(p)
+
+ggsave(file.path(fig_dir, "Fig_43var_group_weight_share.pdf"), p,
+       width = 180, height = 140, units = "mm", dpi = 300)
+```
+
+---
+
+# Error Summary
+
+```{r error-summary, cache=FALSE}
+error_df <- data.frame()
+for (res in all_results) {
+  for (method in c("qgcomp", "gwqs", "groupwqs", "sglwqs")) {
+    err_key <- paste0(method, "_error")
+    if (!is.null(res[[err_key]])) {
+      error_df <- rbind(error_df, data.frame(
+        n = res$n, Seed = res$seed,
+        Method = switch(method, qgcomp="qgcomp", gwqs="gWQS",
+                        groupwqs="groupWQS", sglwqs="SGL-WQS"),
+        Error = res[[err_key]]))
+    }
+  }
+}
+
+if (nrow(error_df) > 0) {
+  cat(sprintf("Total errors: %d\n\n", nrow(error_df)))
+  kable(error_df %>% group_by(Method, n) %>%
+          summarize(Failures = n(), .groups = "drop") %>%
+          pivot_wider(names_from = n, values_from = Failures, values_fill = 0),
+        caption = "Failures by Method and Sample Size") %>%
+    kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+} else {
+  cat("All methods completed successfully.\n")
+}
+```
+
+---
+
+# Consolidated Summary
+
+```{r summary-table, cache=FALSE}
+summary_items <- data.frame()
+
+if (nrow(accuracy_summary) > 0) {
+  summary_items <- rbind(summary_items,
+    accuracy_summary %>% dplyr::select(n, Method, `Mean (SD)`) %>%
+      mutate(Metric = "Direction Accuracy"))
+}
+if (exists("wt_conc_summary") && nrow(wt_conc_summary) > 0) {
+  summary_items <- rbind(summary_items,
+    wt_conc_summary %>%
+      mutate(`Mean (SD)` = sprintf("%.1f%% (%.1f%%)", Mean*100, SD*100)) %>%
+      dplyr::select(n, Method, `Mean (SD)`) %>%
+      mutate(Metric = "Weight Concentration"))
+}
+if (exists("wt_ratio_summary") && nrow(wt_ratio_summary) > 0) {
+  summary_items <- rbind(summary_items,
+    wt_ratio_summary %>%
+      mutate(`Mean (SD)` = sprintf("%.2f (%.2f)", Mean, SD)) %>%
+      dplyr::select(n, Method, `Mean (SD)`) %>%
+      mutate(Metric = "Active/Null Weight Ratio"))
+}
+
+if (nrow(summary_items) > 0) {
+  kable(summary_items %>%
+          pivot_wider(names_from = n, values_from = `Mean (SD)`) %>%
+          arrange(Metric, Method),
+        caption = "Consolidated Performance Summary") %>%
+    kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE) %>%
+    collapse_rows(columns = 1, valign = "top")
+}
+```
+
+---
+
+# Session Info
+
+```{r session-info}
+sessionInfo()
+```
+
