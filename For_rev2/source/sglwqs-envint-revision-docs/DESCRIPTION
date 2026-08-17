@@ -1,0 +1,31 @@
+Package: sglwqs
+Title: Weighted Quantile Sum Regression with Sparse Group Lasso
+Version: 0.8.13.9001
+Authors@R: 
+    person("Akifumi", "Eguchi", email = "siero5335@gmail.com", role = c("aut", "cre"))
+Description: Performs Weighted Quantile Sum (WQS) regression using Sparse Group 
+    Lasso for variable selection and weight estimation. Features include:
+    bootstrap aggregation for stable weight estimation with stratified resampling
+    for binary outcomes, train/validation split for exploratory held-out
+    conditional association summaries,
+    chemical group-based penalties with flexible grouping structures, automatic 
+    dummy coding for categorical covariates, multiple imputation support via mice 
+    package with Rubin's rules pooling, parallel processing support, and 
+    comprehensive visualization functions.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Depends: R (>= 3.5.0)
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Imports: sparsegl, ggplot2, tidyr, dplyr, rlang, stats, utils,
+        generics
+Suggests: qgcomp, gWQS, groupWQS, future.apply, future, patchwork,
+        mice, knitr, rmarkdown, MASS, tibble, survey, testthat (>=
+        3.0.0)
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+NeedsCompilation: no
+LazyData: true
+Author: Akifumi Eguchi [aut, cre]
+Maintainer: Akifumi Eguchi <siero5335@gmail.com>
+Packaged: 2026-03-27 11:12:04 UTC; a_eguchi

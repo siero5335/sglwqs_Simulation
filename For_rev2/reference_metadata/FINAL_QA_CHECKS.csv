@@ -1,0 +1,11 @@
+"check","observed","expected","passed"
+"Core A-E manifest complete","4240/4240","4240/4240",TRUE
+"All locally aggregated A-H jobs complete","5320/5320","5320/5320",TRUE
+"All locally aggregated A-H fits successful","1","1",TRUE
+"F-G failure table empty","0","0",TRUE
+"F-G conditional rates bounded by zero and one","0--1","0--1",TRUE
+"H completion and failure table","480/480; failures=0","480/480; failures=0",TRUE
+"C2 packaged quality checks","13/13","13/13",TRUE
+"D packaged quality checks","12/12","12/12",TRUE
+"Second-PC import audit","34/34","34/34",TRUE
+"Final adopted job count","5720","5720",TRUE

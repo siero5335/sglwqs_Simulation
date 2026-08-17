@@ -1,0 +1,187 @@
+---
+title: "Two-Stage Inference Paths in sglwqs"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Two-Stage Inference Paths in sglwqs}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+## Overview
+
+`sglwqs` separates two related tasks:
+
+1. estimating sparse WQS weights and directional coefficients
+2. estimating downstream effect sizes for WQS composite indices
+
+Those two layers can be combined in different ways through `bootstrap`,
+`validation`, and `refit`.
+
+This vignette summarizes what each configuration returns and where to find the
+results.
+
+## Core Output Paths
+
+### 1. Point estimates only
+
+Use this when you want sparse WQS weights without any uncertainty layer.
+
+```{r}
+fit <- sglwqs(
+  X = X,
+  y = y,
+  bootstrap = FALSE,
+  refit = "none"
+)
+```
+
+Key outputs:
+
+- `fit$pos_weights`, `fit$neg_weights`
+- `fit$cov_coef`
+- `fit$diagnostics`
+
+### 2. Bootstrap-only summaries
+
+Use this when you want weight stability and bootstrap summaries without running
+a downstream GLM.
+
+```{r}
+fit <- sglwqs(
+  X = X,
+  y = y,
+  bootstrap = TRUE,
+  n_boot = 200,
+  refit = "none"
+)
+```
+
+Key outputs:
+
+- `fit$boot_info$selection_freq_pos`, `fit$boot_info$selection_freq_neg`
+- `fit$boot_info$mean_cov_coef`, `fit$boot_info$se_cov_coef`
+- `fit$boot_info$mean_index_sum_pos`, `fit$boot_info$se_index_sum_pos`
+- `fit$boot_info$mean_index_sum_by_group_pos`, `fit$boot_info$se_index_sum_by_group_pos`
+
+Unified access:
+
+```{r}
+summary_inference(fit)
+plot_inference_results(fit)
+```
+
+### 3. Full-data downstream GLM
+
+Use this when `n` is too small for a validation split but you still want a
+second-stage GLM with fixed WQS indices.
+
+```{r}
+fit <- sglwqs(
+  X = X,
+  y = y,
+  refit = "full"
+)
+```
+
+Key outputs:
+
+- `fit$refit_info`
+- `summary_inference(fit)`
+- `plot_inference_results(fit)`
+
+### 4. Validation-based downstream GLM
+
+Use this when you want held-out downstream inference.
+
+```{r}
+fit <- sglwqs(
+  X = X,
+  y = y,
+  validation = TRUE,
+  train_prop = 0.6
+)
+```
+
+Key outputs:
+
+- `fit$validation_info`
+- `summary_inference(fit)`
+- `plot_inference_results(fit)`
+
+## Multiple Imputation
+
+`sglwqs_mice()` follows the same logic, but returns pooled results inside
+`fit$pooled`.
+
+```{r}
+fit_mi <- sglwqs_mice(
+  mids_obj = imp,
+  exposure_vars = exp_vars,
+  outcome_var = "y",
+  bootstrap = TRUE,
+  refit = "full"
+)
+```
+
+Important pooled fields:
+
+- `fit_mi$pooled$pos_weights`, `fit_mi$pooled$neg_weights`
+- `fit_mi$pooled$inference`
+- `fit_mi$pooled$covariates`
+- `fit_mi$pooled$bootstrap_inference`
+
+Backward-compatibility note:
+
+- `fit_mi$pooled$validation` is retained when validation-based downstream
+  inference is the active source.
+
+## Coverage Summary
+
+The table below summarizes the main combinations. `validation = TRUE` is
+equivalent to `refit = "validation"`.
+
+| MI | Bootstrap | Refit | Weight point estimates | Exposure / weight stability | Covariate uncertainty | WQS index uncertainty |
+|----|-----------|-------|------------------------|-----------------------------|-----------------------|-----------------------|
+| No | No  | none       | Yes | No  | No  | No  |
+| No | Yes | none       | Yes | Bootstrap summaries | Bootstrap summaries | Bootstrap summaries |
+| No | No  | full       | Yes | No  | Downstream GLM | Downstream GLM |
+| No | No  | validation | Yes | No  | Downstream GLM | Downstream GLM |
+| No | Yes | full       | Yes | Bootstrap summaries | Downstream GLM | Downstream GLM |
+| No | Yes | validation | Yes | Bootstrap summaries | Downstream GLM | Downstream GLM |
+| Yes| No  | none       | Rubin-pooled | No  | No  | No  |
+| Yes| Yes | none       | Rubin-pooled | Rubin-pooled bootstrap summaries | Rubin-pooled bootstrap summaries | Rubin-pooled bootstrap summaries |
+| Yes| No  | full       | Rubin-pooled | No  | Rubin-pooled downstream GLM | Rubin-pooled downstream GLM |
+| Yes| No  | validation | Rubin-pooled | No  | Rubin-pooled downstream GLM | Rubin-pooled downstream GLM |
+| Yes| Yes | full       | Rubin-pooled | Rubin-pooled bootstrap summaries | Rubin-pooled downstream GLM | Rubin-pooled downstream GLM |
+| Yes| Yes | validation | Rubin-pooled | Rubin-pooled bootstrap summaries | Rubin-pooled downstream GLM | Rubin-pooled downstream GLM |
+
+In practice, this means:
+
+- `refit = "none"` with `bootstrap = TRUE` is the lightest path that still
+  returns uncertainty summaries.
+- `refit = "full"` is the natural small-sample alternative to a
+  train/validation split.
+- `summary_inference()` and `plot_inference_results()` are designed so that the
+  active downstream or bootstrap-only path can be accessed through the same API.
+
+## Diagnostics
+
+Every fitted object also stores descriptive diagnostics.
+
+```{r}
+compute_diagnostics(fit)
+compute_diagnostics(fit_mi)
+```
+
+These diagnostics report observed model characteristics such as sample-to-
+predictor ratio, non-zero weight counts, bootstrap success rate, and active
+inference source. They are intended as factual summaries rather than automatic
+quality judgements.

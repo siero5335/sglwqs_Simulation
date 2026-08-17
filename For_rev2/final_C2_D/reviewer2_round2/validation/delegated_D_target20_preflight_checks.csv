@@ -1,0 +1,8 @@
+check,passed,detail
+manifest_expected_jobs,TRUE,1440/1440
+manifest_binomial_target_20pct,TRUE,range 0.2000--0.2000
+expected_binomial_datasets,TRUE,180/180
+expected_prevalence_calibrated,TRUE,range 0.200000000000--0.200000000000
+realized_prevalence_in_preflight_range,TRUE,range 0.1710--0.2320
+identical_data_across_methods,TRUE,7857b510d2b1f8bc511bd55eef36969a46549a162e8a7af0c6e41b4a2f05f393
+local_source_is_requested_version,TRUE,0.8.13.9001

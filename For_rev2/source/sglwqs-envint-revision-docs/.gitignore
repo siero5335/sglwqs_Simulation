@@ -1,0 +1,6 @@
+.DS_Store
+.Rproj.user/
+*.Rcheck/
+*.tar.gz
+*.tgz
+build/

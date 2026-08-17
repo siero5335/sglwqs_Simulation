@@ -1,0 +1,13 @@
+"result_set","role","expected_jobs","fit_successes","fit_failures","fit_completion_rate"
+"A1 Gaussian sample size","final",720,720,0,1
+"A2 weak Gaussian sample size","final",480,480,0,1
+"B1 Gaussian high dimensional","final",360,360,0,1
+"B2 weak Gaussian high dimensional","final",360,360,0,1
+"C original Gaussian split stability","audit_only",400,400,0,1
+"C2 paired Gaussian split stability","final",400,400,0,1
+"C2 paired binary reference","final",400,400,0,1
+"D target20 factorial","final",1440,1440,0,1
+"E hard setting","final",480,480,0,1
+"F Gaussian correlation","final",480,480,0,1
+"G Gaussian active component","final",120,120,0,1
+"H dense group signal","final",480,480,0,1

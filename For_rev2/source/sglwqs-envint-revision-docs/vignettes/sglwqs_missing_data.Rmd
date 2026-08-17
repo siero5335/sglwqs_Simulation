@@ -1,0 +1,228 @@
+---
+title: "SGL-WQS Analysis with Missing Data"
+subtitle: "Multiple Imputation Approach using mice"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{SGL-WQS Analysis with Missing Data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE, 
+  comment = "#>", 
+  eval = FALSE,
+  fig.width = 10,
+  fig.height = 7,
+  out.width = "100%",
+  dpi = 150
+)
+```
+
+## Overview
+
+This vignette demonstrates `sglwqs_mice()` for analyzing data with missing values using Multiple Imputation (MI) via the `mice` package.
+
+## When to Use
+
+Use `sglwqs_mice()` when:
+
+- Covariates have missing values (MAR or MCAR)
+- You want to avoid bias from complete-case analysis
+- You need proper variance estimation with imputation uncertainty
+
+## Workflow
+
+```{r workflow}
+library(sglwqs)
+library(mice)
+library(future)
+
+# 1. Multiple imputation with mice
+imp <- mice(data, m = 20, seed = 123)
+
+# 2. Fit SGL-WQS to imputed data
+plan(multisession, workers = 4)
+
+fit_mice <- sglwqs_mice(
+  mids_obj = imp,
+  exposure_vars = exposure_vars,
+  outcome_var = "Y",
+  covariate_vars = c("sex", "age", "bmi"),
+  groups = groups,
+  family = "binomial",
+  bootstrap = TRUE,
+  n_boot = 200,
+  validation = TRUE,
+  parallel = TRUE,
+  seed = 123
+)
+
+plan(sequential)
+
+# 3. View results (same functions as regular sglwqs!)
+summary(fit_mice)
+inference_table(fit_mice)
+```
+
+```{r workflow-plots, fig.height=8}
+plot_weights(fit_mice, top_n = 5)
+```
+
+```{r workflow-combined, fig.width=12, fig.height=10}
+plot_combined_results(fit_mice)
+```
+
+## Unified API
+
+The same functions work for both `sglwqs` and `sglwqs_mids` objects:
+
+```{r unified-api}
+# Regular analysis
+fit <- sglwqs(X, y, ...)
+summary(fit)
+plot_weights(fit)
+inference_table(fit)
+
+# MICE analysis (same interface!)
+fit_mice <- sglwqs_mice(imp, ...)
+summary(fit_mice)
+plot_weights(fit_mice)
+inference_table(fit_mice)
+```
+
+## Rubin's Rules
+
+Results are pooled using Rubin's rules:
+
+- **Pooled estimate**: Mean across imputations
+- **Total variance**: Within + between imputation variance
+- **FMI**: Fraction of Missing Information
+
+## Example with Simulated Data
+
+```{r example}
+# Generate data with missing values
+set.seed(123)
+n <- 5000
+data <- data.frame(
+  x1 = rnorm(n), x2 = rnorm(n), x3 = rnorm(n),
+  age = round(rnorm(n, 50, 12)),
+  bmi = round(rnorm(n, 25, 4), 1),
+  Y = rbinom(n, 1, 0.2)
+)
+
+# Introduce ~10% missing in covariates
+data$age[sample(n, n*0.1)] <- NA
+data$bmi[sample(n, n*0.1)] <- NA
+
+# Multiple imputation
+library(mice)
+imp <- mice(data, m = 20, method = "pmm", seed = 123, printFlag = FALSE)
+
+# Fit SGL-WQS
+library(sglwqs)
+library(future)
+
+plan(multisession, workers = 4)
+
+fit_mice <- sglwqs_mice(
+  mids_obj = imp,
+  exposure_vars = c("x1", "x2", "x3"),
+  outcome_var = "Y",
+  covariate_vars = c("age", "bmi"),
+  family = "binomial",
+  bootstrap = TRUE,
+  n_boot = 200,
+  validation = TRUE,
+  parallel = TRUE,
+  # For large-scale analysis with many imputations:
+  checkpoint_dir = "sglwqs_mice_checkpoint",  # Save progress
+  seed = 456
+)
+
+plan(sequential)
+
+# Results
+summary(fit_mice)
+inference_table(fit_mice)
+```
+
+### Large-Scale MICE Analysis
+
+For analyses with many imputations (m=20+) and bootstrap iterations (n_boot=500+), 
+use the checkpoint feature:
+
+```{r large-scale-mice, eval=FALSE}
+# Each imputation's bootstrap progress is saved separately
+fit_mice <- sglwqs_mice(
+  mids_obj = imp,  # m=20 imputations
+  exposure_vars = exposures,
+  outcome_var = "y",
+  groups = groups,
+  bootstrap = TRUE,
+  n_boot = 500,
+  parallel = TRUE,
+  checkpoint_dir = "sglwqs_mice_checkpoint",
+  checkpoint_interval = 50,
+  seed = 123
+)
+
+# Checkpoint structure:
+# sglwqs_mice_checkpoint/
+# ├── imp_1/bootstrap_checkpoint.rds
+# ├── imp_2/bootstrap_checkpoint.rds
+# ...
+# └── imp_20/bootstrap_checkpoint.rds
+```
+
+If interrupted, simply re-run the same code to resume from the last checkpoint.
+
+```{r example-plot}
+plot_weights(fit_mice)
+```
+
+## Interpretation
+
+The output includes:
+
+- **MI Selection Frequency**: Proportion of imputations where variable was selected
+- **Pooled Weights**: Average weights across imputations
+- **FMI**: High FMI (>0.5) suggests more imputations may be needed
+
+## Methodological Notes
+
+### Implementation Approach
+
+`sglwqs_mice()` implements the **"Separate approach"** described in Gunn et al. (2023):
+
+1. SGL-WQS is fitted separately to each imputed dataset
+2. Results are pooled using Rubin's rules
+3. Variable selection may differ across imputed datasets
+
+This approach is computationally efficient and well-validated in the literature.
+
+### Interpreting MI Selection Frequency
+
+The MI Selection Frequency indicates how consistently a variable was selected across imputed datasets:
+
+| Frequency | Interpretation |
+|-----------|----------------|
+| 1.00 | Selected in all imputations (high confidence) |
+| ≥ 0.50 | Selected in majority (reasonably stable) |
+| < 0.50 | Inconsistent selection (interpret with caution) |
+| 0.00 | Never selected |
+
+Variables with low selection frequency may be sensitive to the specific pattern of missing data.
+
+### Bootstrap Validation
+
+The current implementation uses the same bootstrap samples across imputed datasets within each iteration (corresponding to "Approach 1" in Musoro et al., 2014). This provides valid, slightly conservative estimates of optimism.
+
+## References
+
+- Rubin DB. Multiple Imputation for Nonresponse in Surveys. 1987.
+- van Buuren S. mice: Multivariate Imputation. J Stat Softw. 2011.
+- Gunn HJ, et al. How to Apply Variable Selection Machine Learning Algorithms With Multiply Imputed Data. Psychol Methods. 2023;28(2):452-471.
+- Musoro JZ, et al. Validation of prediction models based on lasso regression with multiply imputed data. BMC Med Res Methodol. 2014;14:116.

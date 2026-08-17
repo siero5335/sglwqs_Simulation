@@ -1,0 +1,9 @@
+^\.DS_Store$
+^\.claude$
+^\.claude/
+^\.github$
+^\.github/
+^sglwqs\.Rcheck$
+^sglwqs\.Rcheck/
+^build$
+^build/

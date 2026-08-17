@@ -1,0 +1,154 @@
+---
+title: "Introduction to sglwqs"
+subtitle: "Sparse Group Lasso Weighted Quantile Sum Regression"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction to sglwqs}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE, 
+  comment = "#>", 
+  eval = FALSE,
+  fig.width = 10,
+  fig.height = 7,
+  out.width = "100%",
+  dpi = 150
+)
+```
+
+## Overview
+
+The **sglwqs** package implements Sparse Group Lasso Weighted Quantile Sum (SGL-WQS) regression for analyzing the health effects of chemical mixtures.
+
+### Key Features
+
+| Feature | Traditional WQS | SGL-WQS |
+|---------|-----------------|---------|
+| Effect direction | One direction per model | Bidirectional in single model |
+| Variable selection | All variables included | Automatic selection via penalty |
+| Group structure | Not supported | Supports chemical groups |
+
+## Installation
+
+```{r install}
+install.packages("sglwqs_0.8.10.tar.gz", repos = NULL, type = "source")
+```
+
+## Quick Start (Unified API)
+
+```{r workflow}
+library(sglwqs)
+library(future)
+
+# 1. Fit model
+plan(multisession, workers = 4)
+
+fit <- sglwqs(
+  X = exposures,
+  y = outcome,
+  groups = list(PCBs = pcb_vars, Metals = metal_vars),
+  bootstrap = TRUE,
+  n_boot = 500,
+  validation = TRUE,
+  parallel = TRUE,
+  seed = 123
+)
+
+plan(sequential)
+
+# 2. View results
+summary(fit)
+
+# 3. Visualize
+plot_weights(fit)
+plot_combined_results(fit)
+
+# 4. Export for publication
+inference_table(fit)
+```
+
+## Core Functions
+
+All functions work identically for both `sglwqs` and `sglwqs_mids` objects:
+
+| Function | Purpose |
+|----------|---------|
+| `sglwqs()` / `sglwqs_mice()` | Fit model |
+| `summary()` | Display model summary |
+| `plot_weights()` | Butterfly chart of weights |
+| `inference_table()` | Publication-ready table |
+| `plot_combined_results()` | Multi-panel figure |
+| `extract_weights()` | Get weights as data frame |
+
+## Example with Multiple Chemical Groups
+
+```{r example}
+library(sglwqs)
+library(groupWQS)
+library(future)
+
+data("simdata", package = "groupWQS")
+
+# Define chemical groups
+groups <- list(
+  PCBs = c("pcb_118", "pcb_138", "pcb_153", "pcb_180", "pcb_192"),
+  Metals = c("as", "cu", "pb", "sn"),
+  Pesticides = c("carbaryl", "propoxur", "methoxychlor", "diazinon", "chlorpyrifos")
+)
+
+# Fit model
+plan(multisession, workers = 10)
+
+fit <- sglwqs(
+  X = simdata[, 1:14],
+  y = simdata$Y,
+  family = "binomial",
+  groups = groups,
+  bootstrap = TRUE,
+  n_boot = 500,
+  parallel = TRUE,
+  validation = TRUE,
+  seed = 123
+)
+
+plan(sequential)
+
+# Results
+summary(fit)
+inference_table(fit)
+```
+
+```{r example-plots, fig.height=8}
+plot_weights(fit)
+```
+
+```{r example-combined, fig.width=12, fig.height=10}
+plot_combined_results(fit, top_n = 5)
+```
+
+## Parallel Processing
+
+```{r parallel}
+library(future)
+plan(multisession, workers = parallel::detectCores() - 1)
+# ... fit model with parallel = TRUE ...
+plan(sequential)
+```
+
+## Troubleshooting
+
+**Slow computation**: Enable parallel processing and reduce `n_boot` for exploration.
+
+**All weights are zero**: Try `lambda = "lambda.min"` or check exposure-outcome associations.
+
+**Memory issues**: Use `keep_boot_matrices = FALSE`.
+
+## References
+
+1. Carrico C, et al. (2014). J Biol Agricul Environ Stat.
+2. Simon N, et al. (2013). J Comput Graph Stat.
+3. Keil AP, et al. (2020). Environ Health Perspect.

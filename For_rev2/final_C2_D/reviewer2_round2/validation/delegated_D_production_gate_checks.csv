@@ -1,0 +1,8 @@
+check,passed,detail
+manifest_expected_jobs,TRUE,1440/1440
+all_atomic_outputs_valid,TRUE,1440/1440
+one_metric_row_per_job,TRUE,1440/1440
+production_bootstrap_setting_200,TRUE,n_boot=200 for SGL-WQS/gWQS/groupWQS; qgcomp=0
+seed_metadata_saved,TRUE,1440 rows
+data_and_split_hash_design,TRUE,identical data/split across four methods per scenario-seed
+factorial_binomial_prevalence_target_20pct,TRUE,"expected prevalence calibrated to 0.20; realized prevalence required in [0.10, 0.30]"
